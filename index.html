@@ -172,6 +172,33 @@
     <div class="memorial-hall" id="memorialHall">
       <div class="memorial-title">祭 奠 堂</div>
       <div class="memorial-subtitle">慎终追远 · 缅怀先祖</div>
+
+      <!-- 操作栏：上蜡烛 / 上香 / 上贡品 -->
+      <div class="memorial-actions" id="memorialActions">
+        <button class="memorial-action-btn" id="btnCandle" title="上蜡烛">
+          <div class="action-icon candle-icon" id="candleIcon"></div>
+          <span>上蜡烛</span>
+          <span class="action-count" id="candleCount">0</span>
+        </button>
+        <button class="memorial-action-btn" id="btnIncense" title="上香">
+          <div class="action-icon incense-icon" id="incenseIcon"></div>
+          <span>上香</span>
+          <span class="action-count" id="incenseCount">0</span>
+        </button>
+        <button class="memorial-action-btn" id="btnOfering" title="上贡品">
+          <div class="action-icon ofering-icon" id="oferingIcon"></div>
+          <span>上贡品</span>
+          <span class="action-count" id="oferingCount">0</span>
+        </button>
+      </div>
+
+      <!-- 蜡烛容器 -->
+      <div class="candles-container" id="candlesContainer"></div>
+      <!-- 香炉容器 -->
+      <div class="incense-container" id="incenseContainer"></div>
+      <!-- 贡品容器 -->
+      <div class="ofering-container" id="oferingContainer"></div>
+
       <div id="effectsContainer" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;"></div>
       <div class="ancestor-tablets" id="ancestorTablets" style="position:relative;z-index:1;">
         <div class="no-ancestors">暂无已故先祖记录，请先添加成员信息</div>
@@ -739,8 +766,9 @@
 <!-- ==================== JavaScript ==================== -->
 <script src="js/db.js"></script>
 <script src="js/tree.js"></script>
-<script src="js/effects.js"></script>
-<script src="js/app.js"></script>
+        <script src="js/effects.js"></script>
+        <script src="js/memorial.js"></script>
+        <script src="js/app.js"></script>
 <script src="js/navigation.js"></script>
 <!-- 辈分诗编辑模态框 -->
 <div class="modal-overlay" id="generationPoemModal" style="display:none;">

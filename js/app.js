@@ -625,6 +625,8 @@ const App = {
       }).join('');
       Effects.startCandleGlow();
       Effects.startEmberGlow();
+      // 初始化祭奠堂交互（蜡烛/上香/贡品）
+      if (typeof Memorial !== 'undefined') Memorial.refresh();
     } catch(e) { console.error('loadMemorial error:', e); }
   },
 

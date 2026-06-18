@@ -1066,3 +1066,506 @@ select.form-control { appearance: auto; }
     display: none;
   }
 }
+/* =========================================
+   祭奠堂 — 操作栏 + 蜡烛 + 香 + 贡品
+   ========================================= */
+
+/* 操作栏 */
+.memorial-actions {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  margin: 24px 0 12px;
+  position: relative;
+  z-index: 2;
+}
+
+.memorial-action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: rgba(212,175,55,0.12);
+  border: 1px solid rgba(212,175,55,0.3);
+  border-radius: 12px;
+  padding: 14px 22px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: var(--gold);
+  font-size: 0.85rem;
+  font-family: inherit;
+}
+.memorial-action-btn:hover {
+  background: rgba(212,175,55,0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(212,175,55,0.3);
+}
+.memorial-action-btn:active {
+  transform: scale(0.96);
+}
+.memorial-action-btn span:first-of-type {
+  font-size: 0.8rem;
+  letter-spacing: 2px;
+}
+.action-count {
+  display: inline-block;
+  background: var(--cinnabar);
+  color: #fff;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  line-height: 20px;
+  font-size: 0.7rem;
+  text-align: center;
+}
+
+/* ===== 图标基础 ===== */
+.action-icon {
+  width: 36px;
+  height: 36px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+/* 蜡烛图标（未点燃） */
+.candle-icon {
+  position: relative;
+  width: 24px;
+  height: 40px;
+}
+.candle-icon::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 14px;
+  height: 28px;
+  background: linear-gradient(180deg, #fff5e6, #e8d5b0);
+  border-radius: 3px 3px 2px 2px;
+  border: 1px solid rgba(212,175,55,0.4);
+}
+.candle-icon::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 10px;
+  background: radial-gradient(ellipse, rgba(255,180,50,0.6), transparent);
+  border-radius: 50%;
+}
+
+/* 香图标（未点燃） */
+.incense-icon {
+  position: relative;
+  width: 24px;
+  height: 40px;
+}
+.incense-icon::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 30px;
+  background: linear-gradient(180deg, #8B4513, #A0522D);
+  border-radius: 2px;
+}
+.incense-icon::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  background: #888;
+  border-radius: 50%;
+}
+
+/* 贡品图标 */
+.offering-icon {
+  position: relative;
+  width: 36px;
+  height: 36px;
+}
+.offering-icon::before {
+  content: '\1F347';
+  font-size: 24px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* ===== 蜡烛容器 + 单支蜡烛 ===== */
+.candles-container {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  padding: 12px 0;
+  position: relative;
+  z-index: 1;
+  min-height: 80px;
+  flex-wrap: wrap;
+}
+
+.memorial-candle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  animation: candleAppear 0.6s ease-out both;
+}
+
+@keyframes candleAppear {
+  0%   { transform: translateY(30px) scale(0.5); opacity: 0; }
+  60%  { transform: translateY(-6px) scale(1.05); opacity: 1; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* 蜡烛火焰 */
+.candle-flame {
+  position: relative;
+  width: 14px;
+  height: 22px;
+  background: linear-gradient(180deg, #FFD700 0%, #FF8C00 40%, #FF4500 100%);
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  animation: flameDance 0.4s ease-in-out infinite alternate;
+  transform-origin: bottom center;
+  filter: blur(0.5px);
+}
+@keyframes flameDance {
+  0%   { transform: rotate(-3deg) scaleX(0.9); }
+  100% { transform: rotate(3deg) scaleX(1.1); }
+}
+
+.flame-inner {
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 10px;
+  background: rgba(255,255,255,0.7);
+  border-radius: 50%;
+  filter: blur(1px);
+}
+
+.flame-glow {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30px;
+  height: 30px;
+  background: radial-gradient(circle, rgba(255,180,50,0.5), transparent 70%);
+  border-radius: 50%;
+  animation: glowPulse 1.5s ease-in-out infinite alternate;
+}
+@keyframes glowPulse {
+  0%   { opacity: 0.5; transform: translateX(-50%) scale(0.9); }
+  100% { opacity: 1;   transform: translateX(-50%) scale(1.1); }
+}
+
+/* 烛芯 */
+.candle-wick {
+  width: 2px;
+  height: 4px;
+  background: #333;
+  margin-top: -1px;
+}
+
+/* 蜡烛身体 */
+.candle-body {
+  width: 22px;
+  height: 40px;
+  background: linear-gradient(90deg, #f5e6c8 0%, #fff8ee 40%, #f5e6c8 100%);
+  border-radius: 3px;
+  position: relative;
+  border: 1px solid rgba(212,175,55,0.3);
+  box-shadow: inset 0 0 6px rgba(212,175,55,0.2);
+}
+.candle-stripe {
+  position: absolute;
+  top: 6px;
+  left: 2px;
+  right: 2px;
+  height: 1px;
+  background: rgba(212,175,55,0.4);
+  box-shadow: 0 8px 0 rgba(212,175,55,0.3), 0 16px 0 rgba(212,175,55,0.2);
+}
+
+/* 蜡烛底座 */
+.candle-base {
+  width: 26px;
+  height: 4px;
+  background: linear-gradient(180deg, #d4b896, #b8965a);
+  border-radius: 0 0 3px 3px;
+}
+
+/* 蜡烛光晕 */
+.candle-light-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(ellipse at 50% 30%, rgba(255,180,50,0.15), transparent 70%);
+  pointer-events: none;
+  animation: candleGlow 2s ease-in-out;
+  z-index: 0;
+}
+@keyframes candleGlow {
+  0%   { opacity: 0; }
+  30%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ===== 香容器 + 单支香 ===== */
+.incense-container {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  padding: 8px 0;
+  position: relative;
+  z-index: 1;
+  min-height: 80px;
+  flex-wrap: wrap;
+}
+
+.memorial-incense {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  animation: incenseAppear 0.8s ease-out both;
+}
+@keyframes incenseAppear {
+  0%   { transform: translateY(20px) rotate(-5deg); opacity: 0; }
+  100% { transform: translateY(0) rotate(0deg); opacity: 1; }
+}
+
+/* 烟雾 */
+.incense-smoke {
+  position: relative;
+  width: 20px;
+  height: 40px;
+  overflow: visible;
+}
+
+.smoke-particle {
+  position: absolute;
+  bottom: 0;
+  border-radius: 50%;
+  background: rgba(200,200,200,0.35);
+  filter: blur(3px);
+  animation: smokeRise 3s ease-out infinite;
+}
+.smoke-1 {
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  animation-delay: 0s;
+}
+.smoke-2 {
+  left: 45%;
+  width: 10px;
+  height: 10px;
+  animation-delay: 1s;
+  background: rgba(200,200,200,0.25);
+}
+.smoke-3 {
+  left: 55%;
+  width: 6px;
+  height: 6px;
+  animation-delay: 2s;
+  background: rgba(200,200,200,0.3);
+}
+
+@keyframes smokeRise {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateY(-25px) scale(1.8) translateX(4px);
+    opacity: 0.3;
+  }
+  100% {
+    transform: translateY(-50px) scale(2.5) translateX(-4px);
+    opacity: 0;
+  }
+}
+
+/* 香支 */
+.incense-stick {
+  width: 3px;
+  height: 38px;
+  background: linear-gradient(180deg, #8B4513, #A0522D, #CD853F);
+  border-radius: 1px;
+  position: relative;
+}
+.incense-stick::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 5px;
+  height: 6px;
+  background: radial-gradient(circle, #FF4500, #8B0000);
+  border-radius: 50% 50% 30% 30%;
+  box-shadow: 0 0 6px rgba(255,69,0,0.6);
+  animation: emberGlow 1.2s ease-in-out infinite alternate;
+}
+@keyframes emberGlow {
+  0%   { box-shadow: 0 0 4px rgba(255,69,0,0.4); transform: translateX(-50%) scale(0.9); }
+  100% { box-shadow: 0 0 8px rgba(255,69,0,0.8); transform: translateX(-50%) scale(1.1); }
+}
+
+/* 香灰 */
+.incense-ash {
+  width: 8px;
+  height: 4px;
+  background: #bbb;
+  border-radius: 50%;
+  margin-top: -1px;
+}
+
+/* 香座 */
+.incense-base {
+  width: 20px;
+  height: 6px;
+  background: linear-gradient(180deg, #8B4513, #654321);
+  border-radius: 3px;
+}
+
+/* ===== 贡品容器 ===== */
+.offering-container {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  padding: 12px 0 24px;
+  position: relative;
+  z-index: 1;
+  flex-wrap: wrap;
+}
+
+.memorial-offering {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: rgba(212,175,55,0.08);
+  border: 1px solid rgba(212,175,55,0.2);
+  border-radius: 10px;
+  padding: 10px 16px;
+  animation: offeringAppear 0.6s ease-out both;
+  transition: transform 0.3s;
+}
+.memorial-offering:hover {
+  transform: scale(1.05);
+  background: rgba(212,175,55,0.15);
+}
+@keyframes offeringAppear {
+  0%   { transform: scale(0) rotate(-10deg); opacity: 0; }
+  60%  { transform: scale(1.1) rotate(2deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.offering-emoji {
+  font-size: 2rem;
+  line-height: 1;
+}
+.offering-name {
+  font-size: 0.75rem;
+  color: var(--gold);
+  letter-spacing: 1px;
+}
+
+/* ===== 祭奠堂整体优化 ===== */
+.memorial-hall {
+  position: relative;
+  padding-bottom: 24px;
+}
+
+.ancestor-tablets {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  padding: 16px 0;
+  position: relative;
+  z-index: 1;
+}
+
+/* 牌位样式优化（已有则覆盖） */
+.tablet {
+  background: linear-gradient(180deg, #8B4513 0%, #654321 100%);
+  color: var(--gold);
+  border: 2px solid var(--gold-dark);
+  border-radius: 6px 6px 2px 2px;
+  padding: 10px 14px;
+  min-width: 100px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+.tablet:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(212,175,55,0.3);
+}
+.tablet-name {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 3px;
+  margin-bottom: 4px;
+}
+.tablet-generation {
+  font-size: 0.7rem;
+  opacity: 0.8;
+}
+.tablet-dates {
+  font-size: 0.65rem;
+  opacity: 0.6;
+  margin-top: 2px;
+}
+.tablet-actions {
+  margin-top: 6px;
+}
+.tablet-btn {
+  background: rgba(212,175,55,0.2);
+  border: 1px solid rgba(212,175,55,0.5);
+  color: var(--gold);
+  border-radius: 4px;
+  padding: 2px 10px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+.tablet-btn:hover {
+  background: rgba(212,175,55,0.4);
+}
+
+/* 响应式：移动端祭奠堂 */
+@media (max-width: 768px) {
+  .memorial-actions {
+    gap: 12px;
+  }
+  .memorial-action-btn {
+    padding: 10px 14px;
+    font-size: 0.75rem;
+  }
+  .candles-container,
+  .incense-container,
+  .offering-container {
+    gap: 10px;
+  }
+}
