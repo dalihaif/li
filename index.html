@@ -1,0 +1,771 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>李氏家谱</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%238B0000'/%3E%3Ctext x='50' y='68' text-anchor='middle' font-size='60' font-weight='bold' fill='%23FFD700' font-family='serif'%3E%25E6%259D%258E%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+
+<!-- ==================== 导航栏 ==================== -->
+<nav class="navbar">
+  <a class="navbar-brand" id="navBrand">
+    <div class="brand-icon">李</div>
+    <span>李氏家谱</span>
+  </a>
+  <!-- 汉堡菜单按钮（移动端显示）-->
+  <button class="hamburger-menu" id="hamburgerBtn" aria-label="菜单">
+    <span></span><span></span><span></span>
+  </button>
+  <ul class="navbar-nav" id="navLinks">
+    <li><a href="#" data-page="dashboard" class="active">首页</a></li>
+    <li><a href="#" data-page="members">成员</a></li>
+    <li><a href="#" data-page="tree">家族树</a></li>
+    <li><a href="#" data-page="memorial">祭奠堂</a></li>
+    <li><a href="#" data-page="lifeEvents">生平</a></li>
+    <li><a href="#" data-page="photos">影集</a></li>
+    <li><a href="#" data-page="messages">留言</a></li>
+    <li><a href="#" data-page="mottos">家训</a></li>
+    <li><a href="#" data-page="notices">公告</a></li>
+    <li><a href="#" data-page="stats">统计</a></li>
+  </ul>
+  <div class="effects-toggle" id="effectsToggle" title="切换祭奠特效">
+    <span>🕯️</span>
+    <div class="toggle-switch on" id="effectsSwitch"></div>
+  </div>
+</nav>
+
+<!-- ==================== 主内容 ==================== -->
+<div class="main-content">
+
+  <!-- ===== 首页 ===== -->
+  <div id="page-dashboard" class="page active">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon red">族</div>
+        <div class="stat-info">
+          <div class="stat-value" id="statTotal">0</div>
+          <div class="stat-label">家族总人数</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon blue">男</div>
+        <div class="stat-info">
+          <div class="stat-value" id="statMale">0</div>
+          <div class="stat-label">男性</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon pink">女</div>
+        <div class="stat-info">
+          <div class="stat-value" id="statFemale">0</div>
+          <div class="stat-label">女性</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green">生</div>
+        <div class="stat-info">
+          <div class="stat-value" id="statAlive">0</div>
+          <div class="stat-label">在世</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon purple">故</div>
+        <div class="stat-info">
+          <div class="stat-value" id="statDeceased">0</div>
+          <div class="stat-label">已故</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">最近加入</div>
+        <button class="btn btn-primary" id="btnAddMember">添加成员</button>
+      </div>
+      <div class="member-grid" id="recentMembers">
+        <div class="empty-state">
+          <div class="empty-icon">族</div>
+          <h4>家谱尚未记录</h4>
+          <p>您的家族史还是空白，点击上方按钮开始记录第一位先祖</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">快捷功能</div>
+      </div>
+      <div class="quick-actions">
+        <button class="btn btn-secondary" onclick="App.navigateTo('tree')">家族树</button>
+        <button class="btn btn-secondary" onclick="App.navigateTo('memorial')">祭奠堂</button>
+        <button class="btn btn-outline" onclick="App.navigateTo('members')">成员管理</button>
+        <button class="btn btn-outline" onclick="App.navigateTo('stats')">统计分析</button>
+        <button class="btn btn-outline" onclick="document.getElementById('importFile').click()">导入数据</button>
+        <button class="btn btn-outline" onclick="App.refreshAll()">刷新数据</button>
+      </div>
+    </div>
+    <input type="file" id="importFile" accept=".json" style="display:none;">
+  </div>
+
+  <!-- ===== 成员管理 ===== -->
+  <div id="page-members" class="page">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">成员管理</div>
+        <button class="btn btn-primary" onclick="App.showMemberForm()">添加成员</button>
+      </div>
+      <div class="toolbar">
+        <div class="search-input">
+          <span style="color:var(--text-muted);font-size:0.8rem;">搜</span>
+          <input type="text" id="searchInput" placeholder="搜索姓名、地址、简介..." style="font-size:0.85rem;">
+        </div>
+      </div>
+      <div class="toolbar" id="memberFilters">
+        <div class="filter-group">
+          <button class="filter-btn active" data-group="gender" data-value="all">全部</button>
+          <button class="filter-btn" data-group="gender" data-value="male">男</button>
+          <button class="filter-btn" data-group="gender" data-value="female">女</button>
+        </div>
+        <div class="filter-group">
+          <button class="filter-btn active" data-group="alive" data-value="all">全部状态</button>
+          <button class="filter-btn" data-group="alive" data-value="alive">在世</button>
+          <button class="filter-btn" data-group="alive" data-value="deceased">已故</button>
+        </div>
+      </div>
+      <div class="member-grid" id="memberList"></div>
+    </div>
+  </div>
+
+  <!-- ===== 家族树 ===== -->
+  <div id="page-tree" class="page">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">家族关系树</div>
+        <div style="font-size:0.75rem;color:var(--text-light);">
+          点击节点展开收起 · 拖拽平移 · 滚轮缩放
+        </div>
+      </div>
+      <div class="tree-container">
+        <canvas id="treeCanvas"></canvas>
+        <div class="tree-legend">
+          <div class="legend-item"><div class="legend-dot male"></div> 男性</div>
+          <div class="legend-item"><div class="legend-dot female"></div> 女性</div>
+          <div class="legend-item" style="color:var(--gold-dark);">━ 夫妇</div>
+        </div>
+        <div class="tree-controls">
+          <button class="tree-ctrl-btn" id="treeExpandAll" title="展开全部">▶</button>
+          <button class="tree-ctrl-btn" id="treeCollapseAll" title="收起全部">▼</button>
+          <div class="tree-ctrl-sep"></div>
+          <button class="tree-ctrl-btn" id="treeZoomIn" title="放大">+</button>
+          <button class="tree-ctrl-btn" id="treeZoomOut" title="缩小">-</button>
+          <button class="tree-ctrl-btn" id="treeFit" title="适应屏幕">⊡</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 祭奠堂 ===== -->
+  <div id="page-memorial" class="page">
+    <div class="memorial-hall" id="memorialHall">
+      <div class="memorial-title">祭 奠 堂</div>
+      <div class="memorial-subtitle">慎终追远 · 缅怀先祖</div>
+      <div id="effectsContainer" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;"></div>
+      <div class="ancestor-tablets" id="ancestorTablets" style="position:relative;z-index:1;">
+        <div class="no-ancestors">暂无已故先祖记录，请先添加成员信息</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 生平大事记 ===== -->
+  <div id="page-lifeEvents" class="page">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">生平大事记</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <select id="lifeEventMemberSelect" style="padding:6px 12px;border:1px solid var(--border-light);border-radius:var(--radius);font-size:0.8rem;font-family:inherit;background:var(--paper-light);color:var(--text-primary);">
+            <option value="">选择成员...</option>
+          </select>
+          <button class="btn btn-primary btn-sm" id="btnAddLifeEvent">添加大事</button>
+        </div>
+      </div>
+      <div id="lifeEventTimeline">
+        <div class="empty-state">
+          <div class="empty-icon">史</div>
+          <h4>请选择一位成员</h4>
+          <p>选择上方成员后，将展示其生平大事时间线</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 照片影集 ===== -->
+  <div id="page-photos" class="page">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">照片影集</div>
+        <button class="btn btn-primary btn-sm" id="btnAddPhoto">上传照片</button>
+      </div>
+      <div class="photo-wall" id="photoWall">
+        <div class="empty-state">
+          <div class="empty-icon">影</div>
+          <h4>暂无照片</h4>
+          <p>上传家族老照片，记录家族记忆</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 留言板 ===== -->
+  <div id="page-messages" class="page">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">追思留言</div>
+        <button class="btn btn-primary btn-sm" id="btnAddMessage">写留言</button>
+      </div>
+      <div class="message-board" id="messageBoard">
+        <div class="empty-state">
+          <div class="empty-icon">言</div>
+          <h4>暂无留言</h4>
+          <p>写下对先祖的追思寄语</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 家训 ===== -->
+  <div id="page-mottos" class="page">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">家族家训</div>
+        <button class="btn btn-primary btn-sm" id="btnAddMotto">添加家训</button>
+      </div>
+      <div id="mottoList"></div>
+    </div>
+  </div>
+
+  <!-- ===== 公告 ===== -->
+  <div id="page-notices" class="page">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">家族公告</div>
+        <button class="btn btn-primary btn-sm" id="btnAddNotice">发布公告</button>
+      </div>
+      <div id="noticeList"></div>
+    </div>
+  </div>
+
+  <!-- ===== 统计 ===== -->
+  <div id="page-stats" class="page">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon red">族</div>
+        <div class="stat-info">
+          <div class="stat-value" id="statTotal2">0</div>
+          <div class="stat-label">家族总人数</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon blue">男</div>
+        <div class="stat-info">
+          <div class="stat-value" id="statMale2">0</div>
+          <div class="stat-label">男性</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon pink">女</div>
+        <div class="stat-info">
+          <div class="stat-value" id="statFemale2">0</div>
+          <div class="stat-label">女性</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green">生</div>
+        <div class="stat-info">
+          <div class="stat-value" id="statAlive2">0</div>
+          <div class="stat-label">在世</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon purple">故</div>
+        <div class="stat-info">
+          <div class="stat-value" id="statDeceased2">0</div>
+          <div class="stat-label">已故</div>
+        </div>
+      </div>
+    </div>
+    <div class="card chart-section">
+      <div class="card-title" style="font-size:0.95rem;margin-bottom:12px;">世代分布</div>
+      <div class="bar-chart"><canvas id="genBar"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">数据管理</div>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <button class="btn btn-secondary" id="btnExportJSON">导出 JSON</button>
+        <button class="btn btn-outline" onclick="document.getElementById('importFile').click()">导入数据</button>
+        <button class="btn btn-danger btn-sm" id="btnResetData" style="margin-left:auto;">重置数据</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">操作日志</div>
+        <button class="btn btn-ghost btn-sm" id="btnClearLogs" style="color:var(--danger);">清空日志</button>
+      </div>
+      <div class="log-list" id="logList"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ==================== 页脚 ==================== -->
+<div class="footer">
+  李氏家谱 · 慎终追远 · 数据存储于浏览器本地 · 建议定期导出备份
+</div>
+
+<!-- ==================== Toast ==================== -->
+<div class="toast" id="toast"></div>
+
+<!-- ===== 成员表单弹窗 ===== -->
+<div class="modal-overlay" id="modalOverlay" style="display:none;">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">添加成员</div>
+      <button class="modal-close" id="btnCloseModal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="formMember">
+        <input type="hidden" id="formId">
+        <div style="text-align:center;margin-bottom:16px;">
+          <div style="position:relative;display:inline-block;cursor:pointer;" onclick="document.getElementById('avatarUpload').click()">
+            <div class="member-avatar male" id="avatarPreview" style="width:80px;height:80px;font-size:2rem;">?</div>
+          </div>
+          <input type="file" id="avatarUpload" accept="image/*" style="display:none;">
+        </div>
+        <h4 style="font-size:0.85rem;color:var(--cinnabar);margin-bottom:10px;padding-left:8px;border-left:3px solid var(--cinnabar);">基本信息</h4>
+        <div class="form-row">
+          <div class="form-group">
+            <label>姓名 *</label>
+            <input type="text" class="form-control" id="formName" placeholder="请输入姓名" required>
+          </div>
+          <div class="form-group">
+            <label>性别</label>
+            <select class="form-control" id="formGender">
+              <option value="male">男</option>
+              <option value="female">女</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row-3">
+          <div class="form-group">
+            <label>世代（代）</label>
+            <input type="number" class="form-control" id="formGeneration" placeholder="1" min="1">
+            <div class="form-hint">始祖为第1代</div>
+          </div>
+          <div class="form-group">
+            <label>排行</label>
+            <input type="text" class="form-control" id="formBirthOrder" placeholder="如：长子">
+          </div>
+          <div class="form-group">
+            <label>民族</label>
+            <input type="text" class="form-control" id="formEthnicity" placeholder="汉族" value="汉族">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>出生日期</label>
+            <input type="date" class="form-control" id="formBirthDate">
+          </div>
+          <div class="form-group">
+            <label>逝世日期</label>
+            <input type="date" class="form-control" id="formDeathDate">
+            <div class="form-hint">如在世请留空</div>
+          </div>
+        </div>
+        <h4 style="font-size:0.85rem;color:var(--cinnabar);margin:16px 0 10px;padding-left:8px;border-left:3px solid var(--cinnabar);">传统文化信息</h4>
+        <div class="form-row">
+          <div class="form-group">
+            <label>字</label>
+            <input type="text" class="form-control" id="formCourtesyName" placeholder="如：太祖">
+            <div class="form-hint">成年后社交用的别名</div>
+          </div>
+          <div class="form-group">
+            <label>号</label>
+            <input type="text" class="form-control" id="formArtName" placeholder="如：耕读堂主">
+            <div class="form-hint">雅号、别号</div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>祖籍/郡望</label>
+            <input type="text" class="form-control" id="formAncestralHome" placeholder="如：陇西">
+            <div class="form-hint">李氏郡望：陇西、赵郡等</div>
+          </div>
+          <div class="form-group">
+            <label>辈分字</label>
+            <input type="text" class="form-control" id="formGenerationPoem" placeholder="如：正大光明">
+            <div class="form-hint">本支字辈诗对应字</div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>安葬地</label>
+          <input type="text" class="form-control" id="formBurialSite" placeholder="如：xx省xx市xx公墓">
+          <div class="form-hint">已故成员填坟茔所在地</div>
+        </div>
+        <h4 style="font-size:0.85rem;color:var(--cinnabar);margin:16px 0 10px;padding-left:8px;border-left:3px solid var(--cinnabar);">联系与工作</h4>
+        <div class="form-row">
+          <div class="form-group">
+            <label>学历</label>
+            <input type="text" class="form-control" id="formEducation" placeholder="如：本科">
+          </div>
+          <div class="form-group">
+            <label>职业</label>
+            <input type="text" class="form-control" id="formCareer" placeholder="如：医生">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>联系电话</label>
+            <input type="tel" class="form-control" id="formPhone" placeholder="如：139xxxx1240">
+          </div>
+          <div class="form-group">
+            <label>地址</label>
+            <input type="text" class="form-control" id="formAddress" placeholder="如：某省某市">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>个人简介</label>
+          <textarea class="form-control" id="formBio" placeholder="简要描述生平、成就、事迹等" rows="3"></textarea>
+        </div>
+        <h4 style="font-size:0.85rem;color:var(--cinnabar);margin:16px 0 10px;padding-left:8px;border-left:3px solid var(--cinnabar);">家族关系</h4>
+        <div class="form-group">
+          <label>父亲</label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <div id="fatherLabel" style="flex:1;font-size:0.85rem;"><span style="color:var(--text-muted);">未选择</span></div>
+            <button type="button" class="btn btn-ghost btn-sm" id="btnSelectFather">选择</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="btnClearFather" style="color:var(--danger);">清除</button>
+          </div>
+          <div id="relationPicker_father" style="display:none;margin-top:8px;"></div>
+        </div>
+        <div class="form-group">
+          <label>母亲</label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <div id="motherLabel" style="flex:1;font-size:0.85rem;"><span style="color:var(--text-muted);">未选择</span></div>
+            <button type="button" class="btn btn-ghost btn-sm" id="btnSelectMother">选择</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="btnClearMother" style="color:var(--danger);">清除</button>
+          </div>
+          <div id="relationPicker_mother" style="display:none;margin-top:8px;"></div>
+        </div>
+        <div class="form-group">
+          <label>配偶</label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <div id="spouseLabel" style="flex:1;font-size:0.85rem;"><span style="color:var(--text-muted);">未选择</span></div>
+            <button type="button" class="btn btn-ghost btn-sm" id="btnSelectSpouse">选择</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="btnClearSpouse" style="color:var(--danger);">清除</button>
+          </div>
+          <div id="relationPicker_spouse" style="display:none;margin-top:8px;"></div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-ghost" id="btnCancelForm">取消</button>
+      <button type="submit" class="btn btn-primary" form="formMember">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 成员详情弹窗 ===== -->
+<div class="modal-overlay" id="detailModalOverlay" style="display:none;">
+  <div class="modal wide">
+    <div class="modal-header">
+      <div class="modal-title">成员详情</div>
+      <button class="modal-close" id="btnCloseDetail">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="detail-header">
+        <div class="detail-avatar male" id="detailAvatar">?</div>
+        <div class="detail-info">
+          <h2 id="detailName">—</h2>
+          <div class="detail-meta">
+            <span class="tag tag-male" id="detailGenderTag">男</span>
+            <span class="tag tag-primary" id="detailGenerationTag">第1代</span>
+            <span class="tag tag-gold" id="detailAgeTag">?岁</span>
+          </div>
+        </div>
+      </div>
+      <div class="detail-section">
+        <h4>基本信息</h4>
+        <div class="detail-grid">
+          <div class="detail-item"><span class="dl">出生日期</span><span class="dv" id="detailBirthDate">—</span></div>
+          <div class="detail-item"><span class="dl">逝世日期</span><span class="dv" id="detailDeathDate">—</span></div>
+          <div class="detail-item"><span class="dl">排行</span><span class="dv" id="detailBirthOrder">—</span></div>
+          <div class="detail-item"><span class="dl">民族</span><span class="dv" id="detailEthnicity">—</span></div>
+        </div>
+      </div>
+      <div class="detail-section">
+        <h4>传统文化信息</h4>
+        <div class="detail-grid">
+          <div class="detail-item"><span class="dl">字</span><span class="dv" id="detailCourtesyName">—</span></div>
+          <div class="detail-item"><span class="dl">号</span><span class="dv" id="detailArtName">—</span></div>
+          <div class="detail-item"><span class="dl">祖籍/郡望</span><span class="dv" id="detailAncestralHome">—</span></div>
+          <div class="detail-item"><span class="dl">辈分字</span><span class="dv" id="detailGenerationPoem">—</span></div>
+          <div class="detail-item"><span class="dl">安葬地</span><span class="dv" id="detailBurialSite">—</span></div>
+        </div>
+      </div>
+      <div class="detail-section">
+        <h4>联系与工作</h4>
+        <div class="detail-grid">
+          <div class="detail-item"><span class="dl">学历</span><span class="dv" id="detailEducation">—</span></div>
+          <div class="detail-item"><span class="dl">职业</span><span class="dv" id="detailCareer">—</span></div>
+          <div class="detail-item"><span class="dl">电话</span><span class="dv" id="detailPhone">—</span></div>
+          <div class="detail-item"><span class="dl">地址</span><span class="dv" id="detailAddress">—</span></div>
+        </div>
+      </div>
+      <div class="detail-section">
+        <h4>个人简介</h4>
+        <p style="font-size:0.85rem;color:var(--text-secondary);white-space:pre-wrap;" id="detailBio">—</p>
+      </div>
+      <div class="detail-section">
+        <h4>家族关系</h4>
+        <div class="relation-list" id="detailRelations"></div>
+      </div>
+      <div class="detail-section">
+        <h4>生平大事</h4>
+        <div id="detailLifeEvents" style="font-size:0.85rem;color:var(--text-secondary);">暂无记录</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger btn-sm" id="btnDeleteDetail" style="margin-right:auto;">删除</button>
+      <button class="btn btn-outline" id="btnEditDetail">编辑</button>
+      <button class="btn btn-primary" onclick="App.closeDetailModal()">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 生平大事表单弹窗 ===== -->
+<div class="modal-overlay" id="lifeEventModalOverlay" style="display:none;">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="lifeEventModalTitle">添加大事记</div>
+      <button class="modal-close" id="btnCloseLifeEventModal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="formLifeEvent">
+        <input type="hidden" id="lifeEventFormId">
+        <div class="form-group">
+          <label>关联成员</label>
+          <select class="form-control" id="lifeEventFormMember"></select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>事件类型</label>
+            <select class="form-control" id="lifeEventFormType">
+              <option value="birth">出生</option>
+              <option value="study">求学</option>
+              <option value="marriage">成家</option>
+              <option value="career">立业</option>
+              <option value="achievement">成就</option>
+              <option value="death">寿终</option>
+              <option value="other">其他</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>发生时间</label>
+            <input type="date" class="form-control" id="lifeEventFormDate">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>事件标题 *</label>
+          <input type="text" class="form-control" id="lifeEventFormTitle" placeholder="如：考取进士" required>
+        </div>
+        <div class="form-group">
+          <label>详细描述</label>
+          <textarea class="form-control" id="lifeEventFormDesc" rows="3" placeholder="详细描述该事件..."></textarea>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-ghost" id="btnCancelLifeEvent">取消</button>
+      <button type="submit" class="btn btn-primary" form="formLifeEvent">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 照片上传弹窗 ===== -->
+<div class="modal-overlay" id="photoModalOverlay" style="display:none;">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">上传照片</div>
+      <button class="modal-close" id="btnClosePhotoModal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="formPhoto">
+        <input type="hidden" id="photoFormId">
+        <div class="form-group">
+          <label>选择照片</label>
+          <input type="file" class="form-control" id="photoFormFile" accept="image/*" style="padding:8px;">
+        </div>
+        <div class="form-group">
+          <label>照片标题</label>
+          <input type="text" class="form-control" id="photoFormTitle" placeholder="如：先祖画像">
+        </div>
+        <div class="form-group">
+          <label>关联成员</label>
+          <select class="form-control" id="photoFormMember">
+            <option value="">不关联（家族合影）</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>照片描述</label>
+          <textarea class="form-control" id="photoFormDesc" rows="2" placeholder="简述照片背景..."></textarea>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-ghost" id="btnCancelPhoto">取消</button>
+      <button type="submit" class="btn btn-primary" form="formPhoto">上传</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 留言表单弹窗 ===== -->
+<div class="modal-overlay" id="messageModalOverlay" style="display:none;">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">写留言</div>
+      <button class="modal-close" id="btnCloseMessageModal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="formMessage">
+        <input type="hidden" id="messageFormId">
+        <div class="form-group">
+          <label>您的称呼 *</label>
+          <input type="text" class="form-control" id="messageFormAuthor" placeholder="如：李氏子孙" required>
+        </div>
+        <div class="form-group">
+          <label>追思对象</label>
+          <select class="form-control" id="messageFormMember">
+            <option value="">全体先祖</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>留言内容 *</label>
+          <textarea class="form-control" id="messageFormContent" rows="4" placeholder="写下对先祖的追思与感念..." required></textarea>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-ghost" id="btnCancelMessage">取消</button>
+      <button type="submit" class="btn btn-primary" form="formMessage">发布</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 家训表单弹窗 ===== -->
+<div class="modal-overlay" id="mottoModalOverlay" style="display:none;">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="mottoModalTitle">添加家训</div>
+      <button class="modal-close" id="btnCloseMottoModal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="formMotto">
+        <input type="hidden" id="mottoFormId">
+        <div class="form-group">
+          <label>标题 *</label>
+          <input type="text" class="form-control" id="mottoTitle" placeholder="如：孝悌忠信" required>
+        </div>
+        <div class="form-group">
+          <label>内容 *</label>
+          <textarea class="form-control" id="mottoContent" rows="5" placeholder="请输入家训正文..." required></textarea>
+        </div>
+        <div class="form-group">
+          <label>出处</label>
+          <input type="text" class="form-control" id="mottoAuthor" placeholder="如：李氏祖训">
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-ghost" id="btnCancelMotto">取消</button>
+      <button type="submit" class="btn btn-primary" form="formMotto">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 公告表单弹窗 ===== -->
+<div class="modal-overlay" id="noticeModalOverlay" style="display:none;">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="noticeModalTitle">发布公告</div>
+      <button class="modal-close" id="btnCloseNoticeModal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="formNotice">
+        <input type="hidden" id="noticeFormId">
+        <div class="form-group">
+          <label>标题 *</label>
+          <input type="text" class="form-control" id="noticeTitle" placeholder="请输入公告标题" required>
+        </div>
+        <div class="form-group">
+          <label>内容 *</label>
+          <textarea class="form-control" id="noticeContent" rows="5" placeholder="请输入公告内容..." required></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>类型</label>
+            <select class="form-control" id="noticeType">
+              <option value="normal">普通</option>
+              <option value="important">重要</option>
+              <option value="event">活动</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>发布人</label>
+            <input type="text" class="form-control" id="noticeAuthor" placeholder="如：族长">
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-ghost" id="btnCancelNotice">取消</button>
+      <button type="submit" class="btn btn-primary" form="formNotice">发布</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== JavaScript ==================== -->
+<script src="js/db.js"></script>
+<script src="js/tree.js"></script>
+<script src="js/effects.js"></script>
+<script src="js/app.js"></script>
+<script src="js/navigation.js"></script>
+<!-- 辈分诗编辑模态框 -->
+<div class="modal-overlay" id="generationPoemModal" style="display:none;">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">编辑字辈诗</div>
+      <button class="modal-close" onclick="App.closeGenerationPoemModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div style="margin-bottom:16px;">
+        <label style="display:block;margin-bottom:6px;font-weight:600;color:var(--wood-dark);">字辈诗</label>
+        <textarea id="generationPoemInput" style="width:100%;min-height:120px;padding:12px;border:1px solid var(--border-light);border-radius:var(--radius);font-family:inherit;font-size:1rem;line-height:1.8;" placeholder="请输入字辈诗，每个字代表一代。例如：正大光明立德修身"></textarea>
+        <div style="font-size:0.75rem;color:var(--text-muted);margin-top:6px;">每个汉字代表一代人的辈分字，按世系顺序排列。</div>
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="display:block;margin-bottom:6px;font-weight:600;color:var(--wood-dark);">郡望/祖籍</label>
+        <input type="text" id="ancestralHomeInput" style="width:100%;padding:10px 12px;border:1px solid var(--border-light);border-radius:var(--radius);font-family:inherit;font-size:0.95rem;" placeholder="如：陇西、赵郡">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="App.closeGenerationPoemModal()">取消</button>
+      <button class="btn btn-primary" onclick="App.saveGenerationPoem()">保存</button>
+    </div>
+  </div>
+</div>
+  <script src="js/generation-poem.js"></script>
+</body>
+</html>
