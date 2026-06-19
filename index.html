@@ -174,9 +174,7 @@
       <div class="memorial-subtitle">慎终追远 · 缅怀先祖</div>
 
       <!-- 操作栏：上蜡烛 / 上香 / 上贡品 -->
-      <div class="memorial-actions" id="memorialActions">
-        <button class="memorial-action-btn" id="btnCandle" title="上蜡烛">
-          <div class="action-icon candle-icon" id="candleIcon"></div>
+      
           <span>上蜡烛</span>
           <span class="action-count" id="candleCount">0</span>
         </button>
@@ -202,6 +200,10 @@
       <div id="effectsContainer" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;"></div>
       <div class="ancestor-tablets" id="ancestorTablets" style="position:relative;z-index:1;">
         <div class="no-ancestors">暂无已故先祖记录，请先添加成员信息</div>
+      <div class="memorial-actions" id="memorialActions">
+        <button class="memorial-action-btn" id="btnCandle" title="上蜡烛">
+          <div class="action-icon candle-icon" id="candleIcon"></div>
+    
       </div>
     </div>
   </div>
@@ -495,12 +497,14 @@
           </div>
           <div id="relationPicker_spouse" style="display:none;margin-top:8px;"></div>
         </div>
+      
+        <div class="modal-footer">
+      <button type="button" class="btn btn-ghost" id="btnCancelForm">取消</button>
+      <button type="submit" class="btn btn-primary">保存</button>
+    </div>
       </form>
     </div>
-    <div class="modal-footer">
-      <button type="button" class="btn btn-ghost" id="btnCancelForm">取消</button>
-      <button type="submit" class="btn btn-primary" form="formMember">保存</button>
-    </div>
+    
   </div>
 </div>
 

@@ -9,8 +9,8 @@ const Memorial = {
   offeringCount: 0,
   offerings: [],
 
-  init() {
-    this.loadState();
+  async init() {
+    await this.loadState();
     this.bindEvents();
     this.renderAll();
   },

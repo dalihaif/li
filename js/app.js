@@ -1336,6 +1336,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btnCollapse = document.getElementById('treeCollapseAll');
     if (btnCollapse) btnCollapse.addEventListener('click', () => FamilyTree.collapseAll());
 
+  // 初始化祭奠堂
+  Memorial.init();
   FamilyTree.init('treeCanvas', (id) => { App.showMemberDetail(id); });
   FamilyTree.refresh();
 
@@ -1344,6 +1346,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   Effects.startAll();
   App.loadDashboard();
 });
+
 
 
 

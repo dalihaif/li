@@ -271,8 +271,8 @@ const FamilyTree = (() => {
     // 浅纹理（细线网格）
     ctx.strokeStyle = 'rgba(139,69,19,0.04)';
     ctx.lineWidth = 1;
-    for (let x = 0; x < w; x += 40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke(); }
-    for (let y = 0; y < h; y += 40) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
+    for (let x = 0; x < w; x += 40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x, h); ctx.stroke(); }
+    for (let y = 0; y < h; y += 40) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w, y); ctx.stroke(); }
 
     if (allNodes.length === 0) {
       ctx.fillStyle = '#8D6E63';
@@ -555,11 +555,16 @@ const FamilyTree = (() => {
   }
 
   function refresh() {
-    DB.getTreeData().then(data => update(data));
+    DB.getTreeData()
+      .then(data => {
+        try { update(data); } catch(e) { console.error('FamilyTree.update 错误：', e); }
+      })
+      .catch(e => console.error('FamilyTree.refresh 错误：', e));
   }
 
   return { init, update, render, zoomIn, zoomOut, fitToScreen, refresh, layoutAndRender, expandAll, collapseAll };
 })();
 
 window.FamilyTree = FamilyTree;
+
 
