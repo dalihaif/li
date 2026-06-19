@@ -310,6 +310,13 @@ const App = {
       avatar: this._avatarData || null
     };
 
+    // 将空字符串转换为 null
+    data.father_id = data.father_id || null;
+    data.mother_id = data.mother_id || null;
+    data.spouse_id = data.spouse_id || null;
+    data.birth_date = data.birth_date || null;
+    data.death_date = data.death_date || null;
+
     // ========== 数据验证 ==========
     // 1. 出生日期不能晚于逝世日期
     if (data.birth_date && data.death_date) {
@@ -385,6 +392,8 @@ const App = {
   // ================ Member detail ================
 
   async showMemberDetail(id) {
+    window.currentDetailId = id; // 存储当前查看的成员 ID
+  
     try {
       const member = await DB.get('members', id);
       if (!member) { this.showToast('\u6210\u5458\u4e0d\u5b58\u5728', 'error'); return; }
@@ -1346,6 +1355,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   Effects.startAll();
   App.loadDashboard();
 });
+
 
 
 
