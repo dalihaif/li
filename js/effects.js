@@ -283,6 +283,10 @@ const Effects = (() => {
   return {
     init: init, toggle: toggle, isEnabled: isEnabled,
     startAll: startAll, stopAll: stopAll, onPageChange: onPageChange,
+    startCandleGlow: startCandleGlow, stopCandleGlow: stopCandleGlow,
+    startEmberGlow: startEmberGlow, stopEmberGlow: stopEmberGlow,
+    startIncense: startIncense, stopIncense: stopIncense,
+    startPetals: startPetals, stopPetals: stopPetals,
     startScrollUnfold: startScrollUnfold, destroy: destroy,
     loadThreeJs: function () { return Promise.resolve(); }
   };

@@ -176,8 +176,11 @@ const FamilyTree = (() => {
     };
     const rootsCopy = roots.map(r => copy(r));
 
-    // 标记已故/在世
+    // 标记已故/在世（用 visited 防止配偶双向引用导致无限递归）
+    const visited = new Set();
     const markStatus = n => {
+      if (visited.has(n.id)) return;
+      visited.add(n.id);
       n._deceased = !!n.death_date;
       (n.children || []).forEach(markStatus);
       (n.spouses || []).forEach(markStatus);
