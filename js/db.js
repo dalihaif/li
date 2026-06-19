@@ -139,37 +139,25 @@ const DB = {
     if (members.length === 0) return { roots: [] };
     const map = {};
     members.forEach(m => { map[m.id] = { ...m, children: [], spouses: [] }; });
-    const roots = [];
-    const processed = new Set();
+    // 构建父子关系（用 hasParent 判断根节点，逻辑更清晰）
+    const hasParent = new Set();
     members.forEach(m => {
-      if (!m.father_id && !m.mother_id && !processed.has(m.id)) {
-        roots.push(map[m.id]);
-        processed.add(m.id);
-      }
-    });
-    if (roots.length === 0) {
-      const minGen = Math.min(...members.map(m => m.generation || 99));
-      members.forEach(m => {
-        if ((m.generation || 99) === minGen && !processed.has(m.id)) {
-          roots.push(map[m.id]);
-          processed.add(m.id);
-        }
-      });
-    }
-    members.forEach(m => {
-      if (m.father_id && map[m.father_id] && !processed.has(m.id)) {
+      if (m.father_id && map[m.father_id]) {
         map[m.father_id].children.push(map[m.id]);
-        processed.add(m.id);
-      } else if (m.mother_id && map[m.mother_id] && !processed.has(m.id)) {
+        hasParent.add(m.id);
+      } else if (m.mother_id && map[m.mother_id]) {
         map[m.mother_id].children.push(map[m.id]);
-        processed.add(m.id);
+        hasParent.add(m.id);
       }
     });
+    const roots = members.filter(m => !hasParent.has(m.id)).map(m => map[m.id]);
+    // 按出生顺序排序子女
     Object.values(map).forEach(node => {
       if (node.children.length > 0) {
         node.children.sort((a, b) => (parseInt(a.birth_order) || 99) - (parseInt(b.birth_order) || 99));
       }
     });
+    // 处理配偶关系
     members.forEach(m => {
       if (m.spouse_id && map[m.spouse_id]) {
         const self = map[m.id];
