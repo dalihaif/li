@@ -167,87 +167,49 @@
     </div>
   </div>
 
-  <!-- ===== 祭奠堂 ===== -->
-  <div id="page-memorial" class="page">
-    <div class="memorial-hall" id="memorialHall">
-      <div class="memorial-title">祭 奠 堂</div>
-      <div class="memorial-subtitle">慎终追远 · 缅怀先祖</div>
+      <!-- ===== 祭奠堂 ===== -->
+    <div id="pageMemorial" class="page">
+      <div class="memorial-hall" id="memorialHall">
+        <!-- 牌位 -->
+        <div class="ancestor-tablets" id="ancestorTablets">
+          <div class="tablet">李氏先祖 之位</div>
+        </div>
 
-      <!-- 操作栏：上蜡烛 / 上香 / 上贡品 -->
-      
-          <span>上蜡烛</span>
-          <span class="action-count" id="candleCount">0</span>
-        </button>
-        <button class="memorial-action-btn" id="btnIncense" title="上香">
-          <div class="action-icon incense-icon" id="incenseIcon"></div>
-          <span>上香</span>
-          <span class="action-count" id="incenseCount">0</span>
-        </button>
-        <button class="memorial-action-btn" id="btnOfering" title="上贡品">
-          <div class="action-icon ofering-icon" id="oferingIcon"></div>
-          <span>上贡品</span>
-          <span class="action-count" id="oferingCount">0</span>
-        </button>
-      </div>
+        <!-- 蜡烛（固定3支） -->
+        <div class="memorial-row candles-row" id="candlesContainer">
+          <div class="memorial-candle" id="candle1"><div class="candle-flame"></div><div class="candle-body"></div></div>
+          <div class="memorial-candle" id="candle2"><div class="candle-flame"></div><div class="candle-body"></div></div>
+          <div class="memorial-candle" id="candle3"><div class="candle-flame"></div><div class="candle-body"></div></div>
+        </div>
 
-      <!-- 蜡烛容器 -->
-      <div class="candles-container" id="candlesContainer"></div>
-      <!-- 香炉容器 -->
-      <div class="incense-container" id="incenseContainer"></div>
-      <!-- 贡品容器 -->
-      <div class="ofering-container" id="oferingContainer"></div>
+        <!-- 香（固定3支） -->
+        <div class="memorial-row incense-row" id="incenseContainer">
+          <div class="memorial-incense" id="incense1"><div class="incense-stick"></div><div class="incense-smoke"></div></div>
+          <div class="memorial-incense" id="incense2"><div class="incense-stick"></div><div class="incense-smoke"></div></div>
+          <div class="memorial-incense" id="incense3"><div class="incense-stick"></div><div class="incense-smoke"></div></div>
+        </div>
 
-      <div id="effectsContainer" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;"></div>
-      <div class="ancestor-tablets" id="ancestorTablets" style="position:relative;z-index:1;">
-        <div class="no-ancestors">暂无已故先祖记录，请先添加成员信息</div>
-      <div class="memorial-actions" id="memorialActions">
-        <button class="memorial-action-btn" id="btnCandle" title="上蜡烛">
-          <div class="action-icon candle-icon" id="candleIcon"></div>
-    
-      </div>
-    </div>
-  </div>
+        <!-- 贡品（固定3盘） -->
+        <div class="memorial-row offerings-row" id="offeringContainer">
+          <div class="memorial-offering" id="offering1"><div class="offering-emoji">🍎</div><div class="offering-name">水果</div></div>
+          <div class="memorial-offering" id="offering2"><div class="offering-emoji">🍵</div><div class="offering-name">茶</div></div>
+          <div class="memorial-offering" id="offering3"><div class="offering-emoji">🙏</div><div class="offering-name">敬香</div></div>
+        </div>
 
-  <!-- ===== 生平大事记 ===== -->
-  <div id="page-lifeEvents" class="page">
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">生平大事记</div>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <select id="lifeEventMemberSelect" style="padding:6px 12px;border:1px solid var(--border-light);border-radius:var(--radius);font-size:0.8rem;font-family:inherit;background:var(--paper-light);color:var(--text-primary);">
-            <option value="">选择成员...</option>
-          </select>
-          <button class="btn btn-primary btn-sm" id="btnAddLifeEvent">添加大事</button>
+        <!-- 操作按钮 + 计数器 -->
+        <div class="memorial-actions" id="memorialActions">
+          <button class="memorial-action-btn" id="btnCandle" title="上蜡烛">
+            🕯️ 上蜡烛 <span id="candleCount">0</span>
+          </button>
+          <button class="memorial-action-btn" id="btnIncense" title="上香">
+            🌿 上香 <span id="incenseCount">0</span>
+          </button>
+          <button class="memorial-action-btn" id="btnOffering" title="上贡品">
+            🍎 上贡品 <span id="offeringCount">0</span>
+          </button>
         </div>
       </div>
-      <div id="lifeEventTimeline">
-        <div class="empty-state">
-          <div class="empty-icon">史</div>
-          <h4>请选择一位成员</h4>
-          <p>选择上方成员后，将展示其生平大事时间线</p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== 照片影集 ===== -->
-  <div id="page-photos" class="page">
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">照片影集</div>
-        <button class="btn btn-primary btn-sm" id="btnAddPhoto">上传照片</button>
-      </div>
-      <div class="photo-wall" id="photoWall">
-        <div class="empty-state">
-          <div class="empty-icon">影</div>
-          <h4>暂无照片</h4>
-          <p>上传家族老照片，记录家族记忆</p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== 留言板 ===== -->
+    </div><!-- ===== 留言板 ===== -->
   <div id="page-messages" class="page">
     <div class="card">
       <div class="card-header">

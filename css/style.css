@@ -466,98 +466,175 @@ body {
 }
 
 /* ========== 祭奠堂 ========== */
+
+/* ===== 祭奠堂 ===== */
 .memorial-hall {
-  min-height: 70vh;
-  background: linear-gradient(180deg, #1A0F0A 0%, #2C1810 50%, #1A0F0A 100%);
-  border-radius: var(--radius-lg);
-  padding: 32px 24px;
-  position: relative;
-  overflow: hidden;
-  border: 2px solid var(--gold);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding: 30px 20px;
+  min-height: 500px;
 }
 
-.memorial-title {
-  text-align: center;
-  font-family: 'STSong', 'SimSun', 'Noto Serif CJK SC', 'Source Han Serif SC', serif;
-  font-size: 1.6rem;
-  color: var(--gold);
-  letter-spacing: 0.3em;
-  margin-bottom: 8px;
-}
-.memorial-subtitle {
-  text-align: center;
-  color: var(--text-on-dark);
-  font-size: 0.8rem;
-  margin-bottom: 32px;
-  opacity: 0.7;
-}
-
+/* 牌位 */
 .ancestor-tablets {
+  background: linear-gradient(135deg, #8B0000, #600000);
+  color: #FFD700;
+  padding: 20px 50px;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(139,0,0,0.4);
+  border: 3px solid #FFD700;
+}
+.ancestor-tablets .tablet {
+  font-size: 28px;
+  font-weight: bold;
+  letter-spacing: 8px;
+  text-align: center;
+}
+
+/* 行容器 */
+.memorial-row {
   display: flex;
-  flex-wrap: wrap;
+  justify-content: center;
   gap: 20px;
-  justify-content: center;
+  min-height: 80px;
 }
 
-.tablet {
-  width: 200px;
-  background: linear-gradient(180deg, #3E2723 0%, #2C1810 100%);
-  border: 2px solid var(--gold);
-  border-radius: var(--radius-lg);
-  padding: 20px 16px;
-  text-align: center;
-  cursor: pointer;
-  transition: var(--transition);
+/* 蜡烛 */
+.memorial-candle {
   position: relative;
+  width: 50px;
+  height: 90px;
+  opacity: 0.3;
+  transition: opacity 0.5s;
 }
-.tablet:hover { border-color: var(--gold-light); box-shadow: 0 0 20px rgba(212,175,55,0.3); transform: translateY(-4px); }
-.tablet.candle-lit { box-shadow: 0 0 30px rgba(255,165,0,0.2); }
+.memorial-candle.lit {
+  opacity: 1;
+}
+.candle-body {
+  position: absolute;
+  bottom: 0;
+  left: 10px;
+  width: 30px;
+  height: 60px;
+  background: linear-gradient(to right, #FFF5E1, #FFE4B5, #FFF5E1);
+  border-radius: 4px;
+  box-shadow: inset 0 0 8px rgba(255,165,0,0.3);
+}
+.candle-flame {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 28px;
+  background: radial-gradient(ellipse at center, #FF4500 0%, #FF8C00 40%, #FFD700 70%, transparent 100%);
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+.memorial-candle.lit .candle-flame {
+  opacity: 1;
+  animation: flameFlicker 0.8s infinite alternate;
+}
+@keyframes flameFlicker {
+  0% { transform: translateX(-50%) scale(1) rotate(-2deg); }
+  50% { transform: translateX(-50%) scale(1.1) rotate(2deg); }
+  100% { transform: translateX(-50%) scale(0.95) rotate(-1deg); }
+}
 
-.tablet-name {
-  font-family: 'STSong', 'SimSun', 'Noto Serif CJK SC', 'Source Han Serif SC', serif;
-  font-size: 1.2rem;
-  color: var(--gold);
-  font-weight: 700;
+/* 香 */
+.memorial-incense {
+  position: relative;
+  width: 30px;
+  height: 90px;
+  opacity: 0.3;
+  transition: opacity 0.5s;
 }
-.tablet-generation {
-  color: var(--text-on-dark);
-  font-size: 0.75rem;
-  margin-top: 4px;
-  opacity: 0.6;
+.memorial-incense.lit {
+  opacity: 1;
 }
-.tablet-dates {
-  color: var(--text-on-dark);
-  font-size: 0.7rem;
-  margin-top: 8px;
-  opacity: 0.5;
+.incense-stick {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 60px;
+  background: #8B4513;
+  border-radius: 2px;
 }
-.tablet-actions {
+.incense-smoke {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 30px;
+  height: 40px;
+  opacity: 0;
+  transition: opacity 1s;
+}
+.memorial-incense.lit .incense-smoke {
+  opacity: 1;
+  animation: smokeRise 3s infinite;
+}
+@keyframes smokeRise {
+  0% { transform: translateX(-50%) translateY(0); opacity: 0.8; }
+  100% { transform: translateX(-50%) translateY(-30px); opacity: 0; }
+}
+
+/* 贡品 */
+.memorial-offering {
+  width: 80px;
+  height: 80px;
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
-  margin-top: 12px;
+  background: rgba(255,248,220,0.1);
+  border: 2px dashed rgba(184,134,11,0.3);
+  border-radius: 12px;
+  opacity: 0.3;
+  transition: all 0.5s;
 }
-.tablet-btn {
-  padding: 6px 14px;
-  border: 1px solid var(--gold);
-  border-radius: var(--radius);
-  background: transparent;
-  color: var(--gold);
-  font-size: 0.75rem;
+.memorial-offering.lit {
+  opacity: 1;
+  background: rgba(255,248,220,0.9);
+  border: 2px solid #B8860B;
+  box-shadow: 0 4px 16px rgba(184,134,11,0.3);
+}
+.offering-emoji {
+  font-size: 32px;
+}
+.offering-name {
+  font-size: 12px;
+  color: #5D4037;
+  margin-top: 4px;
+}
+
+/* 操作按钮 */
+.memorial-actions {
+  display: flex;
+  gap: 16px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.memorial-action-btn {
+  background: linear-gradient(135deg, #8B0000, #600000);
+  color: #FFD700;
+  border: 2px solid #FFD700;
+  padding: 10px 20px;
+  border-radius: 25px;
   cursor: pointer;
-  transition: var(--transition);
-  font-family: inherit;
+  font-size: 15px;
+  transition: all 0.3s;
 }
-.tablet-btn:hover { background: var(--gold); color: var(--wood-dark); }
-
-.no-ancestors {
-  text-align: center;
-  color: var(--text-on-dark);
-  padding: 60px 20px;
-  font-size: 1rem;
-  opacity: 0.5;
+.memorial-action-btn:hover {
+  background: linear-gradient(135deg, #600000, #8B0000);
+  transform: scale(1.05);
+  box-shadow: 0 4px 16px rgba(139,0,0,0.4);
 }
-
 /* ========== 生平大事记 ========== */
 .timeline {
   position: relative;

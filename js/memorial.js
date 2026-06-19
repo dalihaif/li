@@ -1,13 +1,12 @@
 /* =========================================
    李氏家谱 — 祭奠堂交互
-   上蜡烛 / 上香 / 上贡品 图案 + 点击特效
+   上蜡烛 / 上香 / 上贡品 — 固定3支/盘，点击激活
    ========================================= */
-
 const Memorial = {
-  candleCount: 0,
-  incenseCount: 0,
-  offeringCount: 0,
-  offerings: [],
+  candleLit: 0,    // 已点燃的蜡烛数 (0-3)
+  incenseLit: 0,    // 已点燃的香数 (0-3)
+  offeringLit: 0,    // 已上的贡品数 (0-3)
+  maxEach: 3,
 
   async init() {
     await this.loadState();
@@ -19,11 +18,9 @@ const Memorial = {
     try {
       const data = await DB.get('settings', 'memorial_state');
       if (data && data.value) {
-        const s = data.value;
-        this.candleCount = s.candleCount || 0;
-        this.incenseCount = s.incenseCount || 0;
-        this.offeringCount = s.offeringCount || 0;
-        this.offerings = s.offerings || [];
+        this.candleLit = data.value.candleLit || 0;
+        this.incenseLit = data.value.incenseLit || 0;
+        this.offeringLit = data.value.offeringLit || 0;
       }
     } catch (e) {}
   },
@@ -31,12 +28,11 @@ const Memorial = {
   async saveState() {
     try {
       await DB.put('settings', {
-        id: 'memorial_state',
+        key: 'memorial_state',
         value: {
-          candleCount: this.candleCount,
-          incenseCount: this.incenseCount,
-          offeringCount: this.offeringCount,
-          offerings: this.offerings
+          candleLit: this.candleLit,
+          incenseLit: this.incenseLit,
+          offeringLit: this.offeringLit
         }
       });
     } catch (e) { console.error('save memorial state error:', e); }
@@ -60,20 +56,20 @@ const Memorial = {
 
   updateCounts() {
     const e1 = document.getElementById('candleCount');
-    if (e1) e1.textContent = this.candleCount;
+    if (e1) e1.textContent = this.candleLit;
     const e2 = document.getElementById('incenseCount');
-    if (e2) e2.textContent = this.incenseCount;
+    if (e2) e2.textContent = this.incenseLit;
     const e3 = document.getElementById('offeringCount');
-    if (e3) e3.textContent = this.offeringCount;
+    if (e3) e3.textContent = this.offeringLit;
   },
 
   /* ===== 蜡烛 ===== */
   addCandle() {
-    if (this.candleCount >= 9) {
-      App.showToast('蜡烛数量已达上限（最多9支）', 'warning');
+    if (this.candleLit >= this.maxEach) {
+      App.showToast('蜡烛已达上限（最多3支）', 'warning');
       return;
     }
-    this.candleCount++;
+    this.candleLit++;
     this.saveState();
     this.renderCandles();
     this.updateCounts();
@@ -82,17 +78,14 @@ const Memorial = {
   },
 
   renderCandles() {
-    const container = document.getElementById('candlesContainer');
-    if (!container) return;
-    container.innerHTML = '';
-    for (let i = 0; i < this.candleCount; i++) {
-      const el = document.createElement('div');
-      el.className = 'memorial-candle lit';
-      el.innerHTML = '<div class="candle-flame"><div class="flame-inner"></div><div class="flame-glow"></div></div>'
-        + '<div class="candle-wick"></div>'
-        + '<div class="candle-body"><div class="candle-stripe"></div></div>'
-        + '<div class="candle-base"></div>';
-      container.appendChild(el);
+    for (let i = 1; i <= this.maxEach; i++) {
+      const el = document.getElementById('candle' + i);
+      if (!el) continue;
+      if (i <= this.candleLit) {
+        el.classList.add('lit');
+      } else {
+        el.classList.remove('lit');
+      }
     }
   },
 
@@ -107,11 +100,11 @@ const Memorial = {
 
   /* ===== 上香 ===== */
   addIncense() {
-    if (this.incenseCount >= 3) {
-      App.showToast('香的数量已达上限（最多3支）', 'warning');
+    if (this.incenseLit >= this.maxEach) {
+      App.showToast('香已达上限（最多3支）', 'warning');
       return;
     }
-    this.incenseCount++;
+    this.incenseLit++;
     this.saveState();
     this.renderIncense();
     this.updateCounts();
@@ -120,60 +113,50 @@ const Memorial = {
   },
 
   renderIncense() {
-    const container = document.getElementById('incenseContainer');
-    if (!container) return;
-    container.innerHTML = '';
-    for (let i = 0; i < this.incenseCount; i++) {
-      const el = document.createElement('div');
-      el.className = 'memorial-incense lit';
-      el.innerHTML = '<div class="incense-smoke">'
-        + '<div class="smoke-particle smoke-1"></div>'
-        + '<div class="smoke-particle smoke-2"></div>'
-        + '<div class="smoke-particle smoke-3"></div>'
-        + '</div>'
-        + '<div class="incense-stick"></div>'
-        + '<div class="incense-ash"></div>'
-        + '<div class="incense-base"></div>';
-      container.appendChild(el);
+    for (let i = 1; i <= this.maxEach; i++) {
+      const el = document.getElementById('incense' + i);
+      if (!el) continue;
+      if (i <= this.incenseLit) {
+        el.classList.add('lit');
+      } else {
+        el.classList.remove('lit');
+      }
     }
   },
 
   animateSmoke() {
-    const particles = document.querySelectorAll('.smoke-particle');
+    const particles = document.querySelectorAll('.memorial-incense.lit .incense-smoke');
     particles.forEach(p => { p.style.animationPlayState = 'running'; });
   },
 
   /* ===== 上贡品 ===== */
   addOffering() {
-    const list = ['水果', '糕点', '酒', '茶', '鲜花', '米饭'];
-    const existing = this.offerings.map(o => o.name);
-    const available = list.filter(n => !existing.includes(n));
-    if (available.length === 0) {
-      App.showToast('贡品已全部上齐', 'warning');
+    if (this.offeringLit >= this.maxEach) {
+      App.showToast('贡品已达上限（最多3盘）', 'warning');
       return;
     }
-    const name = available[0];
-    const emojiMap = { '水果':'\uD83C\uDF4E', '糕点':'\uD83C\uDF70', '酒':'\uD83C\uDF7A', '茶':'\uD83C\uDF75', '鲜花':'\uD83D\uDC8D', '米饭':'\uD83C\uDF5A' };
-    this.offeringCount++;
-    this.offerings.push({ name: name, emoji: emojiMap[name] || '\uD83C\uDF81' });
+    this.offeringLit++;
     this.saveState();
     this.renderOfferings();
     this.updateCounts();
-    App.showToast('已上贡品：' + name, 'success');
+    App.showToast('已上贡品：' + this.getOfferingName(this.offeringLit - 1), 'success');
+  },
+
+  getOfferingName(index) {
+    const names = ['水果', '茶', '敬香'];
+    return names[index] || '贡品';
   },
 
   renderOfferings() {
-    const container = document.getElementById('offeringContainer');
-    if (!container) return;
-    container.innerHTML = '';
-    this.offerings.forEach((item, i) => {
-      const el = document.createElement('div');
-      el.className = 'memorial-offering';
-      el.style.animationDelay = (i * 0.2) + 's';
-      el.innerHTML = '<div class="offering-emoji">' + item.emoji + '</div>'
-        + '<div class="offering-name">' + item.name + '</div>';
-      container.appendChild(el);
-    });
+    for (let i = 1; i <= this.maxEach; i++) {
+      const el = document.getElementById('offering' + i);
+      if (!el) continue;
+      if (i <= this.offeringLit) {
+        el.classList.add('lit');
+      } else {
+        el.classList.remove('lit');
+      }
+    }
   },
 
   async refresh() {
