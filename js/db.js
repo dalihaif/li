@@ -182,6 +182,12 @@ const DB = {
     return '_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
   },
 
+  /* 操作日志（预留接口，当前仅 console.log） */
+  async log(action, detail) {
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}] ${action}: ${detail}`);
+  },
+
   /* 导出全部数据（用于备份） */
   async exportAll() {
     return await this.open();
