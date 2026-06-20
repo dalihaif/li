@@ -1,0 +1,13 @@
+/* 首页样式 */
+
+/* 快捷功能按钮 */
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.quick-actions .btn {
+  justify-content: center;
+  padding: 12px;
+}

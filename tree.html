@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>李氏家谱 - 家族树</title>
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%238B0000'/%3E%3Ctext x='50' y='68' text-anchor='middle' font-size='60' font-weight='bold' fill='%23FFD700' font-family='serif'%3E李%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+  <nav class="navbar">
+    <a class="navbar-brand" href="index.html">
+      <div class="brand-icon">李</div>
+      <span>李氏家谱</span>
+    </a>
+    <button class="hamburger-menu" id="hamburgerBtn" aria-label="菜单">
+      <span></span><span></span><span></span>
+    </button>
+    <ul class="navbar-nav" id="navLinks">
+      <li><a href="index.html" data-page="dashboard">首页</a></li>
+      <li><a href="members.html" data-page="members">成员</a></li>
+      <li><a href="tree.html" data-page="tree" class="active">家族树</a></li>
+      <li><a href="memorial.html" data-page="memorial">祭奠堂</a></li>
+      <li><a href="messages.html" data-page="messages">留言</a></li>
+      <li><a href="mottos.html" data-page="mottos">家训</a></li>
+      <li><a href="notices.html" data-page="notices">公告</a></li>
+      <li><a href="stats.html" data-page="stats">统计</a></li>
+    </ul>
+  </nav>
+
+  <div class="main-content">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">家族关系树</div>
+        <div style="font-size:0.75rem;color:var(--text-light);">
+          点击节点查看详情 · 点击 ± 展开收起 · 拖拽平移 · 滚轮缩放
+        </div>
+      </div>
+      <div class="tree-container" id="treeContainer">
+        <div class="tree-legend">
+          <div class="legend-item"><div class="legend-dot male"></div> 男性</div>
+          <div class="legend-item"><div class="legend-dot female"></div> 女性</div>
+          <div class="legend-item" style="color:var(--gold-dark);">━ 父子</div>
+        </div>
+        <div class="tree-controls">
+          <button class="tree-ctrl-btn" id="treeExpandAll" title="展开全部">▶</button>
+          <button class="tree-ctrl-btn" id="treeCollapseAll" title="收起全部">▼</button>
+          <div class="tree-ctrl-sep"></div>
+          <button class="tree-ctrl-btn" id="treeZoomIn" title="放大">+</button>
+          <button class="tree-ctrl-btn" id="treeZoomOut" title="缩小">-</button>
+          <button class="tree-ctrl-btn" id="treeFit" title="适应屏幕">⊡</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 通用弹窗 -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modalTitle">标题</h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+
+  <!-- Toast 提示 -->
+  <div id="toast" class="toast"></div>
+  <!-- 页脚 -->
+  <div class="footer">
+    <span>访问量 <span id="localPv">0</span> 次</span>
+    <span style="margin-left:12px;">访客数 <span id="localUv">0</span> 人</span>
+    李氏家谱 · 慎终追远
+  </div>
+<script src="js/common.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/effects.js"></script>
+  <script src="js/tree.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>李氏家谱 - 祭奠堂</title>
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%238B0000'/%3E%3Ctext x='50' y='68' text-anchor='middle' font-size='60' font-weight='bold' fill='%23FFD700' font-family='serif'%3E%u674E%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+  <nav class="navbar">
+    <a class="navbar-brand" href="index.html">
+      <div class="brand-icon">李</div>
+      <span>李氏家谱</span>
+    </a>
+    <button class="hamburger-menu" id="hamburgerBtn" aria-label="菜单">
+      <span></span><span></span><span></span>
+    </button>
+    <ul class="navbar-nav" id="navLinks">
+      <li><a href="index.html" data-page="dashboard">首页</a></li>
+      <li><a href="members.html" data-page="members">成员</a></li>
+      <li><a href="tree.html" data-page="tree">家族树</a></li>
+      <li><a href="memorial.html" data-page="memorial" class="active">祭奠堂</a></li>
+      <li><a href="messages.html" data-page="messages">留言</a></li>
+      <li><a href="mottos.html" data-page="mottos">家训</a></li>
+      <li><a href="notices.html" data-page="notices">公告</a></li>
+      <li><a href="stats.html" data-page="stats">统计</a></li>
+    </ul>
+  </nav>
+
+  <div class="main-content">
+    <!-- 特效容器 -->
+    <div id="effectsContainer" class="effects-container"></div>
+
+    <div class="memorial-hall" id="memorialHall">
+
+      <!-- 竖版牌位区域 -->
+      <div class="ancestor-tablets-section" id="ancestorTabletsSection">
+        <div class="tablets-grid" id="tabletsGrid">
+          <div class="tablet-item">
+            <div class="tablet-wood-frame">
+              <div class="tablet-wood-inner">
+                <div class="tablet-char">李</div>
+                <div class="tablet-char">氏</div>
+                <div class="tablet-char">先</div>
+                <div class="tablet-char">祖</div>
+                <div class="tablet-char last">之</div>
+                <div class="tablet-char last">位</div>
+              </div>
+            </div>
+            <div class="tablet-base"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 蜡烛（最多3支） -->
+      <div class="memorial-row candle-row" id="candleContainer"></div>
+
+      <!-- 香炉中的香（最多3支） -->
+      <div class="memorial-row incense-row" id="incenseContainer"></div>
+
+      <!-- 贡品（最多5种） -->
+      <div class="memorial-row offerings-row" id="offeringContainer"></div>
+
+      <!-- 操作按钮 -->
+      <div class="memorial-actions" id="memorialActions">
+        <button class="memorial-action-btn" id="btnCandle" title="点蜡烛">
+          🕯️ 点蜡烛
+        </button>
+        <button class="memorial-action-btn" id="btnIncense" title="上香">
+          🌿 上香
+        </button>
+        <button class="memorial-action-btn" id="btnWine" title="敬酒（累计次数）">
+          🍶 敬酒
+        </button>
+        <button class="memorial-action-btn" id="btnOffering" title="上贡品">
+          🍎 上贡品
+        </button>
+      </div>
+
+      <!-- 累计计数器 -->
+      <div class="cumulative-counter" id="cumulativeCounter">
+        <div class="counter-title">📜 累计供奉</div>
+        <div class="counter-grid">
+          <div class="counter-item">
+            <div class="counter-value" id="totalCandles">0</div>
+            <div class="counter-label">蜡烛累计</div>
+          </div>
+          <div class="counter-item">
+            <div class="counter-value" id="totalIncense">0</div>
+            <div class="counter-label">上香累计</div>
+          </div>
+          <div class="counter-item">
+            <div class="counter-value" id="totalWine">0</div>
+            <div class="counter-label">敬酒累计</div>
+          </div>
+          <div class="counter-item">
+            <div class="counter-value" id="totalOfferings">0</div>
+            <div class="counter-label">贡品累计</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 通用弹窗 -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modalTitle">标题</h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+
+  <!-- Toast 提示 -->
+  <div id="toast" class="toast"></div>
+  <!-- 页脚 -->
+  <div class="footer">
+    <span>访问量 <span id="localPv">0</span> 次</span>
+    <span style="margin-left:12px;">访客数 <span id="localUv">0</span> 人</span>
+    李氏家谱 · 慎终追远
+  </div>
+<script src="js/common.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/effects.js"></script>
+  <script src="js/memorial.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

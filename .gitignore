@@ -1,1 +1,22 @@
+# WorkBuddy 本地数据
+.workbuddy/
+
+# 服务器依赖
+server/node_modules/
+
+# 备份文件
+*.backup
+*.bak
+*.backup
+
+# 临时文件
+fix-*.js
+temp/
+tmp/
+
+# 数据迁移文件
 migrated-data.json
+
+# 系统文件
+.DS_Store
+Thumbs.db

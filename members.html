@@ -1,12 +1,12 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>李氏家谱 - 首页</title>
+  <title>李氏家谱 - 成员管理</title>
   <link rel="stylesheet" href="css/common.css">
   <link rel="stylesheet" href="css/style.css">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%238B0000'/%3E%3Ctext x='50' y='68' text-anchor='middle' font-size='60' font-weight='bold' fill='%23FFD700' font-family='serif'%3E李%3C/text%3E%3C/svg%3E">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%238B0000'/%3E%3Ctext x='50' y='68' text-anchor='middle' font-size='60' font-weight='bold' fill='%23FFD700' font-family='serif'%3E%u674E%3C/text%3E%3C/svg%3E">
 </head>
 <body>
   <nav class="navbar">
@@ -18,8 +18,8 @@
       <span></span><span></span><span></span>
     </button>
     <ul class="navbar-nav" id="navLinks">
-      <li><a href="index.html" data-page="dashboard" class="active">首页</a></li>
-      <li><a href="members.html" data-page="members">成员</a></li>
+      <li><a href="index.html" data-page="dashboard">首页</a></li>
+      <li><a href="members.html" data-page="members" class="active">成员</a></li>
       <li><a href="tree.html" data-page="tree">家族树</a></li>
       <li><a href="memorial.html" data-page="memorial">祭奠堂</a></li>
       <li><a href="messages.html" data-page="messages">留言</a></li>
@@ -28,86 +28,44 @@
       <li><a href="stats.html" data-page="stats">统计</a></li>
     </ul>
   </nav>
-  
+
   <div class="main-content">
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon red">族</div>
-        <div class="stat-info">
-          <div class="stat-value" id="statTotal">0</div>
-          <div class="stat-label">家族总人数</div>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon blue">男</div>
-        <div class="stat-info">
-          <div class="stat-value" id="statMale">0</div>
-          <div class="stat-label">男性</div>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon pink">女</div>
-        <div class="stat-info">
-          <div class="stat-value" id="statFemale">0</div>
-          <div class="stat-label">女性</div>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon green">生</div>
-        <div class="stat-info">
-          <div class="stat-value" id="statAlive">0</div>
-          <div class="stat-label">在世</div>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon purple">故</div>
-        <div class="stat-info">
-          <div class="stat-value" id="statDeceased">0</div>
-          <div class="stat-label">已故</div>
-        </div>
-      </div>
-    </div>
-
     <div class="card">
       <div class="card-header">
-        <div class="card-title">最近加入</div>
-        <button class="btn btn-primary" id="btnAddMember">添加成员</button>
+        <div class="card-title">成员管理</div>
+        <button class="btn btn-primary" onclick="App.showMemberForm()">添加成员</button>
       </div>
-      <div class="member-grid" id="recentMembers">
-        <div class="empty-state">
-          <div class="empty-icon">族</div>
-          <h4>家谱尚未记录</h4>
-          <p>您的家族史还是空白，点击上方按钮开始记录第一位先祖</p>
+      <div class="toolbar">
+        <div class="search-input">
+          <span style="color:var(--text-muted);font-size:0.8rem;">搜</span>
+          <input type="text" id="searchInput" placeholder="搜索姓名、地址、简介..." style="font-size:0.85rem;">
         </div>
       </div>
-    </div>
-
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">快捷功能</div>
+      <div class="toolbar" id="memberFilters">
+        <div class="filter-group">
+          <button class="filter-btn active" data-group="gender" data-value="all">全部</button>
+          <button class="filter-btn" data-group="gender" data-value="male">男</button>
+          <button class="filter-btn" data-group="gender" data-value="female">女</button>
+        </div>
+        <div class="filter-group">
+          <button class="filter-btn active" data-group="alive" data-value="all">全部状态</button>
+          <button class="filter-btn" data-group="alive" data-value="alive">在世</button>
+          <button class="filter-btn" data-group="alive" data-value="deceased">已故</button>
+        </div>
       </div>
-      <div class="quick-actions">
-        <button class="btn btn-secondary" onclick="App.navigateTo('tree')">家族树</button>
-        <button class="btn btn-secondary" onclick="App.navigateTo('memorial')">祭奠堂</button>
-        <button class="btn btn-outline" onclick="App.navigateTo('members')">成员管理</button>
-        <button class="btn btn-outline" onclick="App.navigateTo('stats')">统计分析</button>
-        <button class="btn btn-outline" onclick="document.getElementById('importFile').click()">导入数据</button>
-        <button class="btn btn-outline" onclick="App.refreshAll()">刷新数据</button>
-      </div>
+      <div class="member-grid" id="memberList"></div>
     </div>
-    <input type="file" id="importFile" accept=".json" style="display:none;">
   </div>
 
-  
-  <!-- 通用弹窗 -->
+  <!-- 成员表单弹窗 -->
   <div class="modal-overlay" id="modalOverlay">
     <div class="modal">
       <div class="modal-header">
-        <h3 class="modal-title" id="modalTitle">标题</h3>
-        <button class="modal-close" onclick="closeModal()">&times;</button>
+        <h3 class="modal-title" id="modalTitle">添加成员</h3>
+        <button class="modal-close" id="btnCloseModal">&times;</button>
       </div>
-      <div class="modal-body" id="modalBody">
-<form id="formMember">
+      <div class="modal-body">
+        <form id="formMember">
         <input type="hidden" id="formId">
         <div style="text-align:center;margin-bottom:16px;">
           <div style="position:relative;display:inline-block;cursor:pointer;" onclick="document.getElementById('avatarUpload').click()">
@@ -245,17 +203,19 @@
     </div>
       </form>
     </div>
+    
   </div>
 </div>
 
-<!-- ===== 成员详情弹窗 ===== -->
+  <!-- ===== 成员详情弹窗 ===== -->
 <div class="modal-overlay" id="detailModalOverlay" style="display:none;">
   <div class="modal wide">
     <div class="modal-header">
       <div class="modal-title">成员详情</div>
       <button class="modal-close" id="btnCloseDetail">&times;</button>
-    
-        <button class="modal-btn" id="btnEditFromDetail" onclick="App.showMemberForm(window.currentDetailId)">修改</button></div>
+    </div>
+    <div class="modal-body">
+      <button class="modal-btn" id="btnEditFromDetail" onclick="App.showMemberForm(window.currentDetailId)">修改</button></div>
     <div class="modal-body">
       <div class="detail-header">
         <div class="detail-avatar male" id="detailAvatar">?</div>
@@ -319,8 +279,8 @@
 
 
 
-<!-- Toast 提示 -->
-  <div id="toast" class="toast"></div>
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
   <!-- 页脚 -->
   <div class="footer">
     <span>访问量 <span id="localPv">0</span> 次</span>

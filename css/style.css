@@ -249,7 +249,7 @@ body {
 /* ========== 统计卡片 ========== */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 16px;
   margin-bottom: 20px;
 }
@@ -264,6 +264,7 @@ body {
   gap: 16px;
   box-shadow: var(--shadow);
   transition: var(--transition);
+  overflow: hidden;
 }
 .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
 
@@ -283,15 +284,27 @@ body {
 .stat-icon.green { background: rgba(76,175,80,0.12); }
 .stat-icon.purple { background: rgba(128,0,128,0.1); }
 
-.stat-info { min-width: 0; }
+.stat-info { min-width: 0; flex: 1; overflow: hidden; }
 .stat-value {
   font-family: 'STSong', 'SimSun', 'Noto Serif CJK SC', 'Source Han Serif SC', serif;
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   font-weight: 900;
   color: var(--cinnabar);
   line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.stat-label { font-size: 0.8rem; color: var(--text-light); }
+.stat-label { font-size: 0.75rem; color: var(--text-light); }
+
+/* 不蒜子访客统计 - 处理大数字 */
+#busuanzi_value_site_pv,
+#busuanzi_value_site_uv {
+  font-size: 1.3rem !important;
+  word-break: break-all;
+  white-space: normal;
+  line-height: 1.3;
+}
 
 /* ========== 成员网格 ========== */
 .member-grid {
@@ -400,7 +413,7 @@ body {
 .empty-state h4 { font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 8px; }
 .empty-state p { font-size: 0.85rem; }
 
-/* ========== 家谱树容器 ========== */
+/* ========== 家谱树容器（HTML+SVG 树状图）========== */
 .tree-container {
   position: relative;
   width: 100%;
@@ -408,67 +421,220 @@ body {
   border-radius: var(--radius);
   overflow: hidden;
   border: 1px solid var(--gold);
+  background:
+    linear-gradient(rgba(139,69,19,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(139,69,19,0.03) 1px, transparent 1px),
+    var(--paper);
+  background-size: 40px 40px, 40px 40px, 100% 100%;
 }
 
-.tree-container canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-  background: var(--paper);
-}
-
-.tree-legend {
+/* SVG 连线层 */
+.tree-svg-layer {
   position: absolute;
-  bottom: 12px;
-  left: 12px;
-  display: flex;
-  gap: 16px;
-  background: rgba(245,230,200,0.9);
-  padding: 8px 14px;
-  border-radius: var(--radius);
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  border: 1px solid var(--border-light);
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 1;
 }
-.legend-item { display: flex; align-items: center; gap: 6px; }
-.legend-dot { width: 12px; height: 12px; border-radius: 50%; }
-.legend-dot.male { background: #8B4513; }
-.legend-dot.female { background: #8B0000; }
 
-.tree-controls {
+/* DOM 节点层 */
+.tree-nodes-layer {
   position: absolute;
-  bottom: 12px;
-  right: 12px;
+  top: 0; left: 0;
+  width: 0; height: 0;
+  z-index: 2;
+  transform-origin: 0 0;
+}
+
+/* ========== 树节点 ========== */
+.tree-node {
+  position: absolute;
+  background: #FFFBF5;
+  border-radius: 10px;
+  box-shadow: 0 3px 12px rgba(60,30,10,0.12), 0 1px 4px rgba(60,30,10,0.08);
+  cursor: pointer;
+  transition: box-shadow 0.25s, transform 0.25s;
+  user-select: none;
+}
+.tree-node:hover {
+  box-shadow: 0 6px 24px rgba(60,30,10,0.18), 0 2px 8px rgba(60,30,10,0.12);
+  transform: translateY(-2px);
+  z-index: 10;
+}
+.tree-node.deceased { opacity: 0.78; }
+
+/* 节点顶部色条 */
+.tree-node-header {
+  color: #FFF;
+  font-weight: bold;
+  font-size: 14px;
+  text-align: center;
+  padding: 7px 12px;
+  border-radius: 10px 10px 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 2px;
+  font-family: "Noto Serif SC","STSong",serif;
+}
+
+/* 单人信息区 */
+.tree-node-info {
+  padding: 6px 12px 2px;
+  font-size: 11px;
+  color: #5D4037;
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* 性别符号 */
+.tree-node-gender {
+  text-align: center;
+  font-size: 13px;
+  color: #A1887F;
+  margin-bottom: 4px;
+}
+
+/* 已故标记 */
+.tree-deceased-mark {
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  color: rgba(139,0,0,0.35);
+  font-size: 15px;
+  pointer-events: none;
+}
+
+/* ========== 夫妻同框布局 ========== */
+.tree-node.has-spouse {
   display: flex;
+  flex-direction: row;
+  padding: 0;
+}
+.tree-node-main-col {
+  flex: 0 0 58%;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.tree-node-main-col .tree-node-header {
+  border-radius: 10px 0 0 0;
+}
+.tree-node-main-col .tree-node-info {
+  font-size: 10.5px;
+}
+.tree-node-main-col .tree-node-gender {
+  font-size: 12px;
+}
+
+/* 配偶列 */
+.tree-node-spouse-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-left: 2px dashed rgba(212,175,55,0.4);
+  padding: 0 6px;
+  position: relative;
+  min-width: 0;
+}
+.tree-spouse-header {
+  text-align: center;
+  font-size: 11px;
+  font-weight: bold;
+  color: rgba(184,134,11,0.7);
+  padding: 6px 0 2px;
+  letter-spacing: 4px;
+  font-family: "Noto Serif SC","STSong",serif;
+}
+.tree-spouse-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   gap: 4px;
 }
-.tree-ctrl-btn {
-  width: 36px;
-  height: 36px;
+.tree-spouse-item {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-wrap: wrap;
+  line-height: 1.3;
+  padding: 1px 0;
+}
+.tree-spouse-tag {
+  font-size: 9px;
+  color: #B8860B;
+  white-space: nowrap;
+}
+.tree-spouse-name {
+  font-weight: bold;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.tree-spouse-gender {
+  font-size: 11px;
+  opacity: 0.65;
+}
+.tree-spouse-years {
+  font-size: 8.5px;
+  color: #AAA;
+  width: 100%;
+  padding-left: 2px;
+}
+
+/* 展开/收起按钮 */
+.tree-collapse-btn {
+  position: absolute;
+  bottom: -6px;
+  right: -6px;
+  width: 22px; height: 22px;
   border-radius: 50%;
-  border: 1px solid var(--border);
-  background: rgba(245,230,200,0.9);
-  color: var(--text-primary);
-  font-size: 1.1rem;
+  border: 1.5px solid #D4AF37;
+  background: #FFF;
+  color: #B8860B;
+  font-size: 13px;
+  font-weight: bold;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: var(--transition);
+  z-index: 20;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+  transition: all 0.2s;
+  line-height: 1;
 }
-.tree-ctrl-btn:hover { background: var(--gold); color: var(--wood-dark); }
-.tree-ctrl-sep {
-  width: 1px;
-  height: 24px;
-  background: var(--border-light);
-  margin: 0 2px;
-  align-self: center;
+.tree-collapse-btn:hover {
+  background: #D4AF37;
+  color: #FFF;
+  transform: scale(1.15);
+}
+
+/* ========== SVG 连线样式 ========== */
+.tree-conn-line {
+  stroke: #B8860B;
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+/* 空状态 */
+.tree-empty {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  color: #8D6E63;
+  font-size: 18px;
+  text-align: center;
+  font-family: var(--font-family);
 }
 
 /* ========== 祭奠堂 ========== */
 
 /* ===== 祭奠堂 ===== */
 .memorial-hall {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -477,21 +643,18 @@ body {
   min-height: 500px;
 }
 
-/* 牌位 */
-.ancestor-tablets {
-  background: linear-gradient(135deg, #8B0000, #600000);
-  color: #FFD700;
-  padding: 20px 50px;
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(139,0,0,0.4);
-  border: 3px solid #FFD700;
+.effects-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
 }
-.ancestor-tablets .tablet {
-  font-size: 28px;
-  font-weight: bold;
-  letter-spacing: 8px;
-  text-align: center;
-}
+
+/* ===== 竖版牌位（木制边框）见底部祭奠堂整体优化 ===== */
 
 /* 行容器 */
 .memorial-row {
@@ -499,6 +662,10 @@ body {
   justify-content: center;
   gap: 20px;
   min-height: 80px;
+  flex-wrap: wrap;
+}
+.incense-row, .wine-row {
+  padding: 12px 0;
 }
 
 /* 蜡烛 */
@@ -610,6 +777,67 @@ body {
   font-size: 12px;
   color: #5D4037;
   margin-top: 4px;
+}
+
+/* 敬酒杯 */
+.memorial-wine {
+  position: relative;
+  width: 50px;
+  height: 70px;
+  opacity: 0.3;
+  transition: opacity 0.5s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.memorial-wine.lit {
+  opacity: 1;
+}
+.wine-cup {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 36px;
+  height: 44px;
+  background: linear-gradient(to right, #E8E8E8, #FFFFFF, #E8E8E8);
+  border-radius: 4px 4px 8px 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  overflow: hidden;
+}
+.wine-cup::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 20px;
+  background: linear-gradient(to bottom, rgba(160,82,45,0.6), rgba(160,82,45,0.3));
+  border-radius: 0 0 4px 4px;
+  animation: wineLevel 2s ease-in-out infinite alternate;
+}
+@keyframes wineLevel {
+  0% { top: 10px; }
+  100% { top: 6px; }
+}
+.wine-steam {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  width: 20px;
+  height: 30px;
+  opacity: 0;
+  transition: opacity 1s;
+}
+.memorial-wine.lit .wine-steam {
+  opacity: 1;
+  animation: steamRise 2.5s infinite;
+}
+@keyframes steamRise {
+  0% { transform: translateX(-50%) translateY(0) scaleX(1); opacity: 0.6; }
+  50% { transform: translateX(-50%) translateY(-15px) scaleX(1.3); opacity: 0.3; }
+  100% { transform: translateX(-50%) translateY(-30px) scaleX(0.8); opacity: 0; }
 }
 
 /* 操作按钮 */
@@ -772,7 +1000,7 @@ body {
   top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(26,15,10,0.7);
   z-index: 999;
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
   padding: 20px;
@@ -923,6 +1151,13 @@ select.form-control { appearance: auto; }
 }
 .form-hint { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
 
+/* 表单别名（兼容多页面） */
+.form-input { width:100%;padding:10px 14px;border:1px solid var(--border-light);border-radius:var(--radius);font-size:0.85rem;font-family:inherit;background:var(--paper-light);color:var(--text-primary);transition:var(--transition);outline:none; }
+.form-input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px var(--border-light); }
+.form-textarea { width:100%;padding:10px 14px;border:1px solid var(--border-light);border-radius:var(--radius);font-size:0.85rem;font-family:inherit;background:var(--paper-light);color:var(--text-primary);transition:var(--transition);outline:none;resize:vertical;min-height:80px; }
+.form-textarea:focus { border-color: var(--gold); box-shadow: 0 0 0 3px var(--border-light); }
+.form-label { display:block;font-size:0.8rem;font-weight:500;color:var(--text-secondary);margin-bottom:4px; }
+
 /* ========== 快捷功能区 ========== */
 .quick-actions {
   display: grid;
@@ -964,12 +1199,17 @@ select.form-control { appearance: auto; }
 /* ========== 页脚 ========== */
 .footer {
   text-align: center;
-  padding: 20px;
-  color: var(--text-on-dark);
-  font-size: 0.7rem;
-  opacity: 0.5;
-  border-top: 1px solid rgba(212,175,55,0.1);
+  padding: 18px 20px;
+  color: rgba(212,175,55,0.65);
+  font-size: 0.75rem;
+  border-top: 1px solid rgba(212,175,55,0.15);
   margin-top: 40px;
+  line-height: 1.8;
+}
+#localPv, #localUv {
+  color: var(--gold-light);
+  font-weight: 600;
+  font-size: 0.85rem;
 }
 
 /* ========== Toast 提示 ========== */
@@ -1021,7 +1261,11 @@ select.form-control { appearance: auto; }
   .form-row, .form-row-3 { grid-template-columns: 1fr; }
   .detail-grid { grid-template-columns: 1fr; }
   .tree-container { height: 400px; }
-  .tablet { width: 160px; }
+  .tablets-grid { gap: 16px; }
+  .tablet-wood-frame { width: 75px; }
+  .tablet-wood-inner { min-height: 160px; padding: 12px 6px; }
+  .tablet-char { font-size: 1rem; }
+  .tablet-base { width: 90px; height: 12px; }
 }
 
 
@@ -1386,7 +1630,7 @@ select.form-control { appearance: auto; }
 }
 
 /* 蜡烛光晕 */
-.candle-light-glow {
+.incense-light-glow {
   position: absolute;
   top: 0;
   left: 0;
@@ -1397,14 +1641,41 @@ select.form-control { appearance: auto; }
   animation: candleGlow 2s ease-in-out;
   z-index: 0;
 }
+@keyframes incenseGlow {
+  0%   { opacity: 0; }
+  30%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* 蜡烛光晕（与点蜡烛同理） */
+.candle-light-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(ellipse at 50% 40%, rgba(255,200,100,0.18), transparent 70%);
+  pointer-events: none;
+  animation: candleGlow 2s ease-in-out;
+  z-index: 0;
+}
 @keyframes candleGlow {
   0%   { opacity: 0; }
   30%  { opacity: 1; }
   100% { opacity: 0; }
 }
 
-/* ===== 香容器 + 单支香 ===== */
-.incense-container {
+/* ===== 敬酒容器 + 酒杯 ===== */
+.wine-container {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  padding: 8px 0;
+  position: relative;
+  z-index: 1;
+  min-height: 80px;
+  flex-wrap: wrap;
+}
   display: flex;
   justify-content: center;
   gap: 24px;
@@ -1566,70 +1837,132 @@ select.form-control { appearance: auto; }
 }
 
 /* ===== 祭奠堂整体优化 ===== */
-.memorial-hall {
-  position: relative;
-  padding-bottom: 24px;
+
+/* 牌位网格（竖版木制） */
+.ancestor-tablets-section {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
 }
 
-.ancestor-tablets {
+.tablets-grid {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 16px;
+  gap: 32px;
   padding: 16px 0;
   position: relative;
   z-index: 1;
 }
 
-/* 牌位样式优化（已有则覆盖） */
-.tablet {
-  background: linear-gradient(180deg, #8B4513 0%, #654321 100%);
-  color: var(--gold);
-  border: 2px solid var(--gold-dark);
-  border-radius: 6px 6px 2px 2px;
-  padding: 10px 14px;
-  min-width: 100px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+.tablet-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.3s ease;
 }
-.tablet:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 20px rgba(212,175,55,0.3);
+.tablet-item:hover { transform: translateY(-4px); }
+
+.tablet-wood-frame {
+  position: relative;
+  width: 90px;
+  padding: 8px;
+  background: linear-gradient(135deg, #5D3A1A 0%, #8B5E3C 8%, #5D3A1A 16%, #7B4E2A 25%, #5D3A1A 33%, #8B5E3C 42%, #5D3A1A 50%, #7B4E2A 58%, #5D3A1A 67%, #8B5E3C 75%, #5D3A1A 84%, #7B4E2A 92%, #5D3A1A 100%);
+  border-radius: 6px 6px 0 0;
+  box-shadow: inset 0 0 15px rgba(0,0,0,0.3), 0 6px 20px rgba(0,0,0,0.4);
+  clip-path: polygon(10% 0%, 90% 0%, 95% 2%, 98% 6%, 100% 12%, 100% 88%, 98% 94%, 95% 98%, 90% 100%, 10% 100%, 5% 98%, 2% 94%, 0% 88%, 0% 12%, 2% 6%, 5% 2%);
 }
-.tablet-name {
-  font-size: 1rem;
-  font-weight: 700;
-  letter-spacing: 3px;
-  margin-bottom: 4px;
+
+.tablet-wood-inner {
+  position: relative;
+  background: linear-gradient(180deg, #2C1810 0%, #3E2723 30%, #2C1810 100%);
+  border: 1px solid rgba(212,175,55,0.3);
+  border-radius: 3px;
+  padding: 18px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-height: 200px;
+  box-shadow: inset 0 0 12px rgba(0,0,0,0.4);
 }
-.tablet-generation {
-  font-size: 0.7rem;
-  opacity: 0.8;
+
+/* 牌位顶部弧线装饰 */
+.tablet-wood-inner::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50px;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, rgba(212,175,55,0.4), transparent);
+  border-radius: 2px;
+  z-index: 1;
 }
-.tablet-dates {
+
+.tablet-dynasty {
   font-size: 0.65rem;
-  opacity: 0.6;
-  margin-top: 2px;
+  color: rgba(255,215,0,0.6);
+  letter-spacing: 4px;
+  font-weight: bold;
+  margin-bottom: 4px;
+  font-family: 'STSong', 'SimSun', 'Noto Serif CJK SC', 'Source Han Serif SC', serif;
 }
-.tablet-actions {
-  margin-top: 6px;
+
+.tablet-char {
+  font-family: 'STKaiti', 'KaiTi', 'SimKai', 'Noto Serif CJK SC', serif;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #FFD700;
+  text-shadow: 0 0 6px rgba(212,175,55,0.5), 0 0 12px rgba(139,0,0,0.4);
+  line-height: 1.5;
+  letter-spacing: 2px;
+  text-align: center;
+  writing-mode: vertical-rl;
 }
-.tablet-btn {
-  background: rgba(212,175,55,0.2);
-  border: 1px solid rgba(212,175,55,0.5);
-  color: var(--gold);
-  border-radius: 4px;
-  padding: 2px 10px;
-  font-size: 0.75rem;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.2s;
+.tablet-char.suffix { font-size: 0.8rem; color: rgba(255,215,0,0.7); }
+
+.tablet-base {
+  width: 110px;
+  height: 16px;
+  background: linear-gradient(180deg, #7B4E2A 0%, #5D3A1A 40%, #3E1F0D 100%);
+  border-radius: 0 0 6px 6px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.1);
 }
-.tablet-btn:hover {
-  background: rgba(212,175,55,0.4);
+
+/* 累计计数器 */
+.cumulative-counter {
+  width: 100%;
+  max-width: 500px;
+  background: linear-gradient(135deg, rgba(60,30,15,0.9), rgba(80,40,20,0.9));
+  border: 2px solid rgba(212,175,55,0.3);
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-top: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  position: relative;
+  z-index: 2;
 }
+.counter-title {
+  text-align: center;
+  color: rgba(255,215,0,0.8);
+  font-size: 0.9rem;
+  letter-spacing: 4px;
+  margin-bottom: 14px;
+  font-family: 'STSong', 'SimSun', 'Noto Serif CJK SC', 'Source Han Serif SC', serif;
+}
+.counter-grid { display: flex; justify-content: space-around; gap: 16px; }
+.counter-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.counter-value {
+  font-family: 'STSong', 'SimSun', 'Noto Serif CJK SC', 'Source Han Serif SC', serif;
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: #FFD700;
+  text-shadow: 0 0 8px rgba(212,175,55,0.5);
+  line-height: 1.1;
+}
+.counter-label { font-size: 0.7rem; color: rgba(255,215,0,0.5); letter-spacing: 2px; }
 
 /* 响应式：移动端祭奠堂 */
 @media (max-width: 768px) {
@@ -1645,4 +1978,32 @@ select.form-control { appearance: auto; }
   .offering-container {
     gap: 10px;
   }
+}
+
+/* 祝福文字特效 */
+.blessing-text {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.5);
+  font-family: 'STSong', 'SimSun', 'Noto Serif CJK SC', 'Source Han Serif SC', serif;
+  font-size: 3rem;
+  font-weight: 900;
+  color: #FFD700;
+  text-shadow:
+    0 0 20px rgba(255,165,0,0.8),
+    0 0 40px rgba(255,165,0,0.6),
+    0 0 60px rgba(255,69,0,0.4),
+    2px 2px 4px rgba(0,0,0,0.6);
+  opacity: 0;
+  z-index: 10000;
+  pointer-events: none;
+  white-space: nowrap;
+  letter-spacing: 8px;
+  transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.blessing-text.show {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
 }

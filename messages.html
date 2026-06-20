@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>李氏家谱 - 留言</title>
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%238B0000'/%3E%3Ctext x='50' y='68' text-anchor='middle' font-size='60' font-weight='bold' fill='%23FFD700' font-family='serif'%3E李%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+  <nav class="navbar">
+    <a class="navbar-brand" href="index.html">
+      <div class="brand-icon">李</div>
+      <span>李氏家谱</span>
+    </a>
+    <button class="hamburger-menu" id="hamburgerBtn" aria-label="菜单">
+      <span></span><span></span><span></span>
+    </button>
+    <ul class="navbar-nav" id="navLinks">
+      <li><a href="index.html" data-page="dashboard">首页</a></li>
+      <li><a href="members.html" data-page="members">成员</a></li>
+      <li><a href="tree.html" data-page="tree">家族树</a></li>
+      <li><a href="memorial.html" data-page="memorial">祭奠堂</a></li>
+      <li><a href="messages.html" data-page="messages" class="active">留言</a></li>
+      <li><a href="mottos.html" data-page="mottos">家训</a></li>
+      <li><a href="notices.html" data-page="notices">公告</a></li>
+      <li><a href="stats.html" data-page="stats">统计</a></li>
+    </ul>
+  </nav>
+  
+  <div class="main-content">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">追思留言</div>
+        <button class="btn btn-primary btn-sm" id="btnAddMessage">写留言</button>
+      </div>
+      <div class="message-board" id="messageBoard">
+        <div class="empty-state">
+          <div class="empty-icon">言</div>
+          <h4>暂无留言</h4>
+          <p>写下对先祖的追思寄语</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  
+  
+  <!-- 通用弹窗 -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modalTitle">标题</h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+  
+  
+  <!-- 留言表单弹窗 -->
+  <div class="modal-overlay" id="messageModalOverlay" style="display:none">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">写留言</h3>
+        <button class="modal-close" onclick="document.getElementById('messageModalOverlay').style.display='none'">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="formMessage">
+          <div class="form-group">
+            <label class="form-label">留言人</label>
+            <input type="text" class="form-input" id="msgAuthor" placeholder="您的姓名" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">留言内容</label>
+            <textarea class="form-textarea" id="msgContent" rows="4" placeholder="写下对先祖的追思寄语..." required></textarea>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="document.getElementById('messageModalOverlay').style.display='none'">取消</button>
+            <button type="submit" class="btn btn-primary">提交留言</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast 提示 -->
+  <div id="toast" class="toast"></div>
+  <!-- 页脚 -->
+  <div class="footer">
+    <span>访问量 <span id="localPv">0</span> 次</span>
+    <span style="margin-left:12px;">访客数 <span id="localUv">0</span> 人</span>
+    李氏家谱 · 慎终追远
+  </div>
+<script src="js/common.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

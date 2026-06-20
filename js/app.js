@@ -66,29 +66,55 @@ const App = {
     });
   },
 
+  // ========== 本地访问统计 (PV/UV) ==========
+  _initLocalStats() {
+    try {
+      // PV: 每次页面加载 +1
+      let pv = parseInt(localStorage.getItem('ls_pv') || '0', 10);
+      pv += 1;
+      localStorage.setItem('ls_pv', String(pv));
+
+      // UV: 按天去重，当天首次访问 +1
+      const today = this._todayStr();
+      const lastDate = localStorage.getItem('ls_uv_date') || '';
+      let uv = parseInt(localStorage.getItem('ls_uv') || '0', 10);
+      if (lastDate !== today) {
+        uv += 1;
+        localStorage.setItem('ls_uv', String(uv));
+        localStorage.setItem('ls_uv_date', today);
+      }
+
+      // 更新页面显示
+      const elPv = document.getElementById('localPv');
+      const elUv = document.getElementById('localUv');
+      if (elPv) elPv.textContent = pv;
+      if (elUv) elUv.textContent = uv;
+    } catch (e) {
+      // localStorage 不可用时静默失败
+    }
+  },
+
+  _todayStr() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  },
+
   // ================ Navigation ================
 
   navigateTo(pageId) {
-    this.currentPage = pageId;
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    const pg = document.getElementById('page-' + pageId);
-    if (pg) pg.classList.add('active');
-    document.querySelectorAll('.navbar-nav a').forEach(a => {
-      a.classList.toggle('active', a.dataset.page === pageId);
-    });
-    switch (pageId) {
-      case 'dashboard': this.loadDashboard(); break;
-      case 'members': this.loadMembers(); break;
-      case 'tree': FamilyTree.refresh(); break;
-      case 'memorial': this.loadMemorial(); Effects.onPageChange('memorial'); break;
-      case 'lifeEvents': this.loadLifeEventMembers(); break;
-      case 'photos': this.loadPhotos(); break;
-      case 'messages': this.loadMessages(); break;
-      case 'mottos': this.loadMottos(); break;
-      case 'notices': this.loadNotices(); break;
-      case 'stats': this.loadStats(); break;
-    }
-    if (pageId !== 'memorial') Effects.onPageChange(pageId);
+    const pageMap = {
+      'dashboard': 'index.html',
+      'members': 'members.html',
+      'tree': 'tree.html',
+      'memorial': 'memorial.html',
+      'lifeEvents': 'life-events.html',
+      'photos': 'photos.html',
+      'messages': 'messages.html',
+      'mottos': 'mottos.html',
+      'notices': 'notices.html',
+      'stats': 'stats.html'
+    };
+    window.location.href = pageMap[pageId] || 'index.html';
   },
 
   refreshAll() {
@@ -110,6 +136,14 @@ const App = {
       await this.loadRecentMembers();
     } catch(e) { console.error('loadDashboard error:', e); }
       try { await this.loadGenerationPoem(); } catch(e) { console.error('loadGenerationPoem error:', e); }
+  },
+
+  async loadGenerationPoem() {
+    // 从 IndexedDB 加载辈分诗和祖籍信息（不渲染到UI，仅缓存）
+    try {
+      this._generationPoem = (await DB.get('settings', 'generation_poem'))?.value || '';
+      this._ancestralHome = (await DB.get('settings', 'ancestral_home'))?.value || '';
+    } catch(e) { /* 静默失败 */ }
   },
 
   async loadRecentMembers() {
@@ -205,24 +239,27 @@ const App = {
     if (!overlay) return;
 
     const resetForm = () => {
-      document.getElementById('formId').value = '';
-      document.getElementById('formName').value = ''; document.getElementById('formGender').value = 'male';
-      document.getElementById('formGeneration').value = ''; document.getElementById('formBirthOrder').value = '';
-      document.getElementById('formEthnicity').value = '汉族'; document.getElementById('formBirthDate').value = '';
-      document.getElementById('formDeathDate').value = ''; document.getElementById('formEducation').value = '';
-      document.getElementById('formCareer').value = ''; document.getElementById('formPhone').value = '';
-      document.getElementById('formAddress').value = ''; document.getElementById('formBio').value = '';
-      // 传统文化字段
-      document.getElementById('formCourtesyName').value = '';
-      document.getElementById('formArtName').value = '';
-      document.getElementById('formAncestralHome').value = '';
-      document.getElementById('formGenerationPoem').value = '';
-      document.getElementById('formBurialSite').value = '';
-      document.getElementById('avatarPreview').className = 'member-avatar male';
-      document.getElementById('avatarPreview').textContent = '?';
-      document.getElementById('avatarPreview').style.backgroundImage = '';
+      const safeVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+      safeVal('formId', '');
+      safeVal('formName', ''); safeVal('formGender', 'male');
+      safeVal('formGeneration', ''); safeVal('formBirthOrder', '');
+      safeVal('formEthnicity', '汉族'); safeVal('formBirthDate', '');
+      safeVal('formDeathDate', ''); safeVal('formEducation', '');
+      safeVal('formCareer', ''); safeVal('formPhone', '');
+      safeVal('formAddress', ''); safeVal('formBio', '');
+      safeVal('formCourtesyName', '');
+      safeVal('formArtName', '');
+      safeVal('formAncestralHome', '');
+      safeVal('formGenerationPoem', '');
+      safeVal('formBurialSite', '');
+      const av = document.getElementById('avatarPreview');
+      if (av) { av.className = 'member-avatar male'; av.textContent = '?'; av.style.backgroundImage = ''; }
       this._avatarData = null;
     };
+
+    // 隐藏详情弹窗，防止遮住编辑表单（两者 z-index 相同，详情弹窗 DOM 靠后）
+    const detailOverlay = document.getElementById('detailModalOverlay');
+    if (detailOverlay) detailOverlay.style.display = 'none';
 
     if (id) {
       title.textContent = '\u7f16\u8f91\u6210\u5458';
@@ -343,10 +380,13 @@ const App = {
       await DB.log(id ? '\u66f4\u65b0\u6210\u5458' : '\u6dfb\u52a0\u6210\u5458', name);
       this.loadDashboard();
       this.loadMembers();
-      FamilyTree.refresh();
-    } catch(e) {
-      this.showToast('\u4fdd\u5b58\u5931\u8d25', 'error');
-      console.error(e);
+      // 编辑保存后，刷新详情弹窗显示最新数据
+      if (id) {
+        try { await this.showMemberDetail(parseInt(id)); } catch(e) {}
+      }
+      } catch(e) {
+      this.showToast('\u4fdd\u5b58\u5931\u8d25\uff1a' + (e.message || e), 'error');
+      console.error('saveMember error:', e);
     }
   },
 
@@ -367,26 +407,31 @@ const App = {
     return null;
   },
 
-  // 检查 targetId 是否是 memberId 的后代
+  // 检查 targetId 是否是 memberId 的后代（防止选后代做父母）
+  // 例：memberId=当前成员，targetId=选中的父亲
+  //     如果父亲是_memberId_ 的后代（即晚辈），则返回 true（非法）
   async _isDescendant(memberId, targetId) {
+    const allMembers = await DB.getAll('members');
+
     const visited = new Set();
-    const queue = [targetId];
+    const queue = [memberId];  // 从自己开始，向下遍历所有后代
     while (queue.length > 0) {
       const currentId = queue.shift();
-      if (currentId === memberId) return true;
+      if (currentId === targetId) return true;  // targetId 是后代 → 非法
       if (visited.has(currentId)) continue;
       visited.add(currentId);
-      const children = await DB.query('members', 'father_id', currentId);
+      // 找 currentId 的所有子女
+      const children = allMembers.filter(m => m.father_id === currentId || m.mother_id === currentId);
       for (const child of children) queue.push(child.id);
     }
-    return false;
+    return false;  // targetId 不是后代 → 合法
   },
 
   closeModal() {
     const overlay = document.getElementById('modalOverlay');
     if (overlay) overlay.style.display = 'none';
     this.currentMember = null;
-    this._deleteId = null;
+    // 注意：不清除 _deleteId，因为它属于详情弹窗，可能在编辑保存后仍需用于删除操作
   },
 
   // ================ Member detail ================
@@ -427,7 +472,7 @@ const App = {
       document.getElementById('detailCareer').textContent = member.career || '\u2014';
       document.getElementById('detailPhone').textContent = member.phone || '\u2014';
       document.getElementById('detailAddress').textContent = member.address || '\u2014';
-      document.getElementById('detailBio').textContent = member.io || '\u2014';
+      document.getElementById('detailBio').textContent = member.bio || '\u2014';
 
       // 传统文化字段
       document.getElementById('detailCourtesyName').textContent = member.courtesy_name || '\u2014';
@@ -539,6 +584,30 @@ const App = {
     } catch(e) { this.showToast('\u5220\u9664\u5931\u8d25', 'error'); }
   },
 
+  // ================ Reset Database ================
+
+  async resetDB() {
+    if (!confirm('确定要重置数据库吗？这将清空所有数据，且不可恢复！')) return;
+    if (!confirm('再次确认：清空所有族谱数据？')) return;
+    try {
+      this.showToast('正在重置数据库...', 'info');
+      // 使用 deleteAll 清空所有对象存储
+      const storeNames = ['members', 'messages', 'mottos', 'notices', 'settings', 'life_events', 'photos', 'logs'];
+      for (const storeName of storeNames) {
+        try {
+          await DB.deleteAll(storeName);
+        } catch(e) {
+          // 如果某个store不存在，继续清除其他store
+          console.log('Clear ' + storeName + ' failed:', e);
+        }
+      }
+      this.showToast('数据库已重置，页面将刷新...', 'success');
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (e) {
+      this.showToast('重置失败: ' + e.message, 'error');
+    }
+  },
+
   // ================ Relation picker ================
 
   async openRelationPicker(role) {
@@ -634,727 +703,382 @@ const App = {
       }).join('');
       Effects.startCandleGlow();
       Effects.startEmberGlow();
-      // 初始化祭奠堂交互（蜡烛/上香/贡品）
-      if (typeof Memorial !== 'undefined') Memorial.refresh();
     } catch(e) { console.error('loadMemorial error:', e); }
   },
 
-  // ================ Life Events ================
+  // ========== 留言 ==========
 
-  async loadLifeEventMembers() {
-    const select = document.getElementById('lifeEventMemberSelect');
-    if (!select) return;
-    try {
-      const members = await DB.getAll('members');
-      select.innerHTML = '<option value="">\u9009\u62e9\u6210\u5458...</option>' +
-        members.map(m => '<option value="' + m.id + '">' + this.esc(m.name) + '</option>').join('');
-      select.onchange = () => {
-        const val = select.value;
-        if (val) this.loadLifeEvents(parseInt(val));
-        else document.getElementById('lifeEventTimeline').innerHTML = '<div class="empty-state"><div class="empty-icon">\u53f2</div><h4>\u8bf7\u9009\u62e9\u4e00\u4f4d\u6210\u5458</h4><p>\u9009\u62e9\u4e0a\u65b9\u6210\u5458\u540e\uff0c\u5c06\u5c55\u793a\u5176\u751f\u5e73\u5927\u4e8b\u65f6\u95f4\u7ebf</p></div>';
-      };
-    } catch(e) { console.error(e); }
-    const btn = document.getElementById('btnAddLifeEvent');
-    if (btn) btn.onclick = () => this.showLifeEventForm();
-  },
-
-  async loadLifeEvents(memberId) {
-    const container = document.getElementById('lifeEventTimeline');
-    if (!container) return;
-    try {
-      const events = await DB.getLifeEvents(memberId);
-      if (events.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div class="empty-icon">\u53f2</div><h4>\u6682\u65e0\u8bb0\u5f55</h4><p>\u70b9\u51fb\u201c\u6dfb\u52a0\u5927\u4e8b\u201d\u5f00\u59cb\u8bb0\u5f55</p></div>';
+  loadMessages() {
+    const board = document.getElementById('messageBoard');
+    if (!board) return;
+    DB.getAll('messages').then(messages => {
+      if (!messages || messages.length === 0) {
+        board.innerHTML = '<div class="empty-state"><div class="empty-icon">言</div><h4>暂无留言</h4><p>写下对先祖的追思寄语</p></div>';
         return;
       }
-      const sorted = events.sort((a,b) => (a.event_date||'').localeCompare(b.event_date||''));
-      container.innerHTML = '<div class="timeline">' +
-        sorted.map(e => {
-          const typeClass = e.event_type === 'birth' ? 'birth' : e.event_type === 'death' ? 'death' : e.event_type === 'marriage' ? 'marriage' : e.event_type === 'career' ? 'career' : '';
-          return '<div class="timeline-item">' +
-            '<div class="timeline-dot ' + typeClass + '"></div>' +
-            '<div class="timeline-date">' + (e.event_date||'') + '</div>' +
-            '<div class="timeline-title">' + this.esc(e.title) + '</div>' +
-            (e.description ? '<div class="timeline-desc">' + this.esc(e.description) + '</div>' : '') +
-            '<div style="margin-top:8px;">' +
-            '<button class="btn btn-ghost btn-sm" onclick="App.showLifeEventForm(' + e.id + ')" title="\u7f16\u8f91">\u270e</button>' +
-            '<button class="btn btn-ghost btn-sm" onclick="App.deleteLifeEvent(' + e.id + ',' + memberId + ')">\u5220\u9664</button>' +
-            '</div></div>';
-        }).join('') + '</div>';
-    } catch(e) { console.error(e); }
+      messages.sort((a,b) => (b.created_at || b.id || 0) - (a.created_at || a.id || 0));
+      board.innerHTML = messages.map(m => `
+        <div class="msg-item" style="padding:16px;border-bottom:1px solid rgba(139,69,19,0.15);margin-bottom:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <strong style="color:#8B0000;">${this._esc(m.author || '匿名')}</strong>
+            <small style="color:#999;">${this._fmtDate(m.created_at)}</small>
+          </div>
+          <p style="color:#4a3728;line-height:1.8;">${this._esc(m.content || '')}</p>
+          <button class="btn btn-sm" style="color:#c0392b;padding:4px 8px;font-size:12px;"
+            onclick="App.deleteMsg(${m.id})">删除</button>
+        </div>
+      `).join('');
+    }).catch(e => console.error('loadMessages error:', e));
   },
 
-  async showLifeEventForm(id) {
-    const overlay = document.getElementById('lifeEventModalOverlay');
-    if (!overlay) return;
-    overlay.style.display = 'flex';
-    document.getElementById('lifeEventFormId').value = id || '';
-    document.getElementById('lifeEventFormTitle').value = '';
-    document.getElementById('lifeEventFormDesc').value = '';
-    document.getElementById('lifeEventFormDate').value = '';
-    document.getElementById('lifeEventFormType').value = 'birth';
-    document.getElementById('lifeEventModalTitle').textContent = id ? '\u7f16\u8f91\u5927\u4e8b\u8bb0' : '\u6dfb\u52a0\u5927\u4e8b\u8bb0';
-    try {
-      const all = await DB.getAll('members');
-      const sel = document.getElementById('lifeEventFormMember');
-      sel.innerHTML = all.map(m => '<option value="' + m.id + '">' + this.esc(m.name) + '</option>').join('');
-      if (id) {
-        const evt = await DB.get('lifeEvents', id);
-        if (evt) {
-          document.getElementById('lifeEventFormTitle').value = evt.title || '';
-          document.getElementById('lifeEventFormDesc').value = evt.description || '';
-          document.getElementById('lifeEventFormDate').value = evt.event_date || '';
-          document.getElementById('lifeEventFormType').value = evt.event_type || 'other';
-          if (evt.member_id) document.getElementById('lifeEventFormMember').value = evt.member_id;
-        }
-      }
-    } catch(e) {}
-  },
-
-  async saveLifeEvent(e) {
+  saveMessage(e) {
     e.preventDefault();
-    const memberId = parseInt(document.getElementById('lifeEventFormMember').value);
-    const title = document.getElementById('lifeEventFormTitle').value.trim();
-    if (!memberId || !title) { this.showToast('\u8bf7\u5b8c\u5584\u4fe1\u606f', 'error'); return; }
-    const editId = document.getElementById('lifeEventFormId').value;
-    const data = {
-      member_id: memberId,
-      title: title,
-      event_type: document.getElementById('lifeEventFormType').value,
-      event_date: document.getElementById('lifeEventFormDate').value || null,
-      description: document.getElementById('lifeEventFormDesc').value
-    };
-    if (editId) data.id = parseInt(editId);
-    try {
-      await DB.put('lifeEvents', data);
-      document.getElementById('lifeEventModalOverlay').style.display = 'none';
-      this.showToast(editId ? '\u5927\u4e8b\u5df2\u66f4\u65b0' : '\u5927\u4e8b\u5df2\u6dfb\u52a0', 'success');
-      if (editId) {
-        const sel = document.getElementById('lifeEventMemberSelect');
-        if (sel && sel.value) this.loadLifeEvents(parseInt(sel.value));
-      } else {
-        this.loadLifeEvents(memberId);
-      }
-      await DB.log(editId ? '\u66f4\u65b0\u751f\u5e73\u5927\u4e8b' : '\u6dfb\u52a0\u751f\u5e73\u5927\u4e8b', title);
-    } catch(e) { this.showToast('\u4fdd\u5b58\u5931\u8d25', 'error'); }
+    const author = document.getElementById('msgAuthor')?.value?.trim();
+    const content = document.getElementById('msgContent')?.value?.trim();
+    if (!content) { this.showToast('请输入留言内容', 'warn'); return; }
+    DB.put('messages', { author: author || '匿名', content, created_at: new Date().toISOString() })
+      .then(() => {
+        this.showToast('留言已提交');
+        document.getElementById('messageModalOverlay').style.display = 'none';
+        document.getElementById('formMessage').reset();
+        this.loadMessages();
+      }).catch(e => this.showToast('提交失败: ' + e.message, 'error'));
   },
 
-  async deleteLifeEvent(id, memberId) {
-    if (!confirm('\u786e\u5b9a\u5220\u9664\u8be1\u5f55\uff1f')) return;
-    try {
-      await DB.delete('lifeEvents', id);
-      this.showToast('\u5df2\u5220\u9664', 'success');
-      if (memberId) this.loadLifeEvents(memberId);
-    } catch(e) { this.showToast('\u5220\u9664\u5931\u8d25', 'error'); }
-  },
-
-  // ================ Photos ================
-
-  async loadPhotos() {
-    const container = document.getElementById('photoWall');
-    if (!container) return;
-    try {
-      const photos = await DB.getAll('photos');
-      if (photos.length === 0) return;
-      container.innerHTML = photos.sort((a,b) => (b.id||0)-(a.id||0)).map(p => {
-        return '<div class="photo-item">' +
-          '<img src="' + p.data_url + '" alt="' + this.esc(p.title||'\u7167\u7247') + '" loading="lazy" onclick="App.showPhotoViewer(' + p.id + ')">' +
-          '<div class="photo-overlay">' + this.esc(p.title||'\u65e0\u6807\u9898') + '</div>' +
-          '<div class="photo-actions">' +
-          '<button class="photo-btn photo-btn-edit" onclick="event.stopPropagation();App.showPhotoForm(' + p.id + ')" title="\u7f16\u8f91">\u270e</button>' +
-          '<button class="photo-btn photo-btn-delete" onclick="event.stopPropagation();App.deletePhoto(' + p.id + ')" title="\u5220\u9664">\u2716</button>' +
-          '</div></div>';
-      }).join('');
-    } catch(e) { console.error(e); }
-  },
-
-  async showPhotoForm(id) {
-    const overlay = document.getElementById('photoModalOverlay');
-    if (!overlay) return;
-    overlay.style.display = 'flex';
-    document.getElementById('photoFormId').value = id || '';
-    document.getElementById('photoFormTitle').value = '';
-    document.getElementById('photoFormDesc').value = '';
-    document.getElementById('photoFormFile').value = '';
-    document.querySelector('#photoModalOverlay .modal-title').textContent = id ? '\u7f16\u8f91\u7167\u7247' : '\u4e0a\u4f20\u7167\u7247';
-    try {
-      const all = await DB.getAll('members');
-      const select = document.getElementById('photoFormMember');
-      select.innerHTML = '<option value="">\u4e0d\u5173\u8054\uff08\u5bb6\u65cf\u5408\u5f71\uff09</option>' +
-        all.map(m => '<option value="' + m.id + '">' + this.esc(m.name) + '</option>').join('');
-      if (id) {
-        const photo = await DB.get('photos', id);
-        if (photo) {
-          document.getElementById('photoFormTitle').value = photo.title || '';
-          document.getElementById('photoFormDesc').value = photo.description || '';
-          if (photo.member_id) document.getElementById('photoFormMember').value = photo.member_id;
-        }
-      }
-    } catch(e) {}
-  },
-
-  async savePhoto(e) {
-    e.preventDefault();
-    const editId = document.getElementById('photoFormId').value;
-    const fileInput = document.getElementById('photoFormFile');
-    const file = fileInput.files[0];
-    const title = document.getElementById('photoFormTitle').value || '\u65e0\u6807\u9898';
-    const description = document.getElementById('photoFormDesc').value;
-    const member_id = parseInt(document.getElementById('photoFormMember').value) || null;
-    if (!file && !editId) { this.showToast('\u8bf7\u9009\u62e9\u7167\u7247', 'error'); return; }
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = async (ev) => {
-        const data = { title, description, member_id, data_url: ev.target.result, created_at: new Date().toISOString() };
-        if (editId) { data.id = parseInt(editId); delete data.created_at; }
-        try {
-          await DB.put('photos', data);
-          document.getElementById('photoModalOverlay').style.display = 'none';
-          this.showToast(editId ? '\u7167\u7247\u5df2\u66f4\u65b0' : '\u7167\u7247\u5df2\u4e0a\u4f20', 'success');
-          this.loadPhotos();
-          await DB.log(editId ? '\u66f4\u65b0\u7167\u7247' : '\u4e0a\u4f20\u7167\u7247', title);
-        } catch(e) { this.showToast('\u4fdd\u5b58\u5931\u8d25', 'error'); }
-      };
-      reader.readAsDataURL(file);
-    } else {
-      const existing = await DB.get('photos', parseInt(editId));
-      if (!existing) { this.showToast('\u7167\u7247\u4e0d\u5b58\u5728', 'error'); return; }
-      existing.title = title;
-      existing.description = description;
-      existing.member_id = member_id;
-      try {
-        await DB.put('photos', existing);
-        document.getElementById('photoModalOverlay').style.display = 'none';
-        this.showToast('\u7167\u7247\u5df2\u66f4\u65b0', 'success');
-        this.loadPhotos();
-        await DB.log('\u66f4\u65b0\u7167\u7247', title);
-      } catch(e) { this.showToast('\u4fdd\u5b58\u5931\u8d25', 'error'); }
-    }
-  },
-
-  async showPhotoViewer(id) {
-    try {
-      const photo = await DB.get('photos', id);
-      if (!photo) return;
-      const overlay = document.createElement('div');
-      overlay.className = 'modal-overlay';
-      overlay.style.cursor = 'pointer';
-      overlay.onclick = () => document.body.removeChild(overlay);
-      overlay.innerHTML = '<div style="max-width:90vw;max-height:90vh;display:flex;flex-direction:column;align-items:center;gap:12px;" onclick="event.stopPropagation()">' +
-        '<img src="' + photo.data_url + '" style="max-width:100%;max-height:80vh;border-radius:8px;border:3px solid var(--gold);box-shadow:var(--shadow-lg);">' +
-        '<div style="background:rgba(26,15,10,0.8);color:var(--gold);padding:8px 20px;border-radius:8px;font-size:0.85rem;">' +
-        this.esc(photo.title||'') + (photo.description ? ' \u2014 ' + this.esc(photo.description) : '') + '</div>' +
-        '<button class="btn btn-sm btn-outline" onclick="App.deletePhoto(' + id + ');document.body.removeChild(this.closest(\'.modal-overlay\'));">\u5220\u9664\u7167\u7247</button>' +
-        '</div>';
-      document.body.appendChild(overlay);
-    } catch(e) { console.error(e); }
-  },
-
-  async deletePhoto(id) {
-    if (!confirm('\u786e\u5b9a\u8981\u5220\u9664\u8be5\u7167\u7247\uff1f\u6b64\u64cd\u4f5c\u4e0d\u53ef\u64a4\u9500\u3002')) return;
-    try {
-      await DB.delete('photos', id);
-      this.showToast('\u7167\u7247\u5df2\u5220\u9664', 'success');
-      this.loadPhotos();
-    } catch(e) { this.showToast('\u5220\u9664\u5931\u8d25', 'error'); }
-  },
-
-  // ================ Messages ================
-
-  async loadMessages() {
-    const container = document.getElementById('messageBoard');
-    if (!container) return;
-    try {
-      const messages = await DB.getAll('messages');
-      if (messages.length === 0) return;
-      container.innerHTML = messages.sort((a,b) => (b.id||0)-(a.id||0)).map(m => {
-        return '<div class="message-item">' +
-          '<div class="message-header">' +
-          '<span class="message-author">' + this.esc(m.author||'\u533f\u540d') + '</span>' +
-          '<span class="message-date">' + (m.created_at ? new Date(m.created_at).toLocaleDateString('zh-CN') : '') + '</span>' +
-          '</div>' +
-          '<div class="message-content">' + this.esc(m.content) + '</div>' +
-          '<div style="margin-top:8px;">' +
-          '<button class="btn btn-ghost btn-sm" onclick="App.showMessageForm(' + m.id + ')" title="\u7f16\u8f91">\u270e</button>' +
-          '<button class="btn btn-ghost btn-sm" onclick="App.deleteMessage(' + m.id + ')">\u5220\u9664</button>' +
-          '</div></div>';
-      }).join('');
-    } catch(e) { console.error(e); }
-  },
-
-  async showMessageForm(id) {
-    const overlay = document.getElementById('messageModalOverlay');
-    if (!overlay) return;
-    overlay.style.display = 'flex';
-    document.getElementById('messageFormId').value = id || '';
-    document.getElementById('messageFormAuthor').value = '';
-    document.getElementById('messageFormContent').value = '';
-    document.querySelector('#messageModalOverlay .modal-title').textContent = id ? '\u7f16\u8f91\u7559\u8a00' : '\u5199\u7559\u8a00';
-    try {
-      const all = await DB.getAll('members');
-      const select = document.getElementById('messageFormMember');
-      select.innerHTML = '<option value="">\u5168\u4f53\u5148\u7956</option>' +
-        all.filter(m => m.death_date).map(m => '<option value="' + m.id + '">' + this.esc(m.name) + '</option>').join('');
-      if (id) {
-        const msg = await DB.get('messages', id);
-        if (msg) {
-          document.getElementById('messageFormAuthor').value = msg.author || '';
-          document.getElementById('messageFormContent').value = msg.content || '';
-          if (msg.member_id) document.getElementById('messageFormMember').value = msg.member_id;
-        }
-      }
-    } catch(e) {}
-  },
-
-  async saveMessage(e) {
-    e.preventDefault();
-    const author = document.getElementById('messageFormAuthor').value.trim();
-    const content = document.getElementById('messageFormContent').value.trim();
-    if (!author || !content) { this.showToast('\u8bf7\u586b\u5199\u5b8c\u6574', 'error'); return; }
-    const editId = document.getElementById('messageFormId').value;
-    const data = {
-      author: author,
-      content: content,
-      member_id: parseInt(document.getElementById('messageFormMember').value) || null,
-      created_at: new Date().toISOString()
-    };
-    if (editId) { data.id = parseInt(editId); delete data.created_at; }
-    try {
-      await DB.put('messages', data);
-      document.getElementById('messageModalOverlay').style.display = 'none';
-      this.showToast(editId ? '\u7559\u8a00\u5df2\u66f4\u65b0' : '\u7559\u8a00\u5df2\u53d1\u5e03', 'success');
+  deleteMsg(id) {
+    if (!confirm('确定删除该留言？')) return;
+    DB.delete('messages', id).then(() => {
+      this.showToast('留言已删除');
       this.loadMessages();
-      await DB.log(editId ? '\u66f4\u65b0\u7559\u8a00' : '\u53d1\u5e03\u7559\u8a00', author);
-    } catch(e) { this.showToast('\u4fdd\u5b58\u5931\u8d25', 'error'); }
+    }).catch(e => this.showToast('删除失败: ' + e.message, 'error'));
   },
 
-  async deleteMessage(id) {
-    if (!confirm('\u786e\u5b9a\u5220\u9664\u8be5\u7559\u8a00\uff1f')) return;
-    try {
-      await DB.delete('messages', id);
-      this.showToast('\u5df2\u5220\u9664', 'success');
-      this.loadMessages();
-    } catch(e) { this.showToast('\u5220\u9664\u5931\u8d25', 'error'); }
-  },
+  // ========== 家训 ==========
 
-  // ================ Mottos ================
-
-  async loadMottos() {
-    const container = document.getElementById('mottoList');
-    if (!container) return;
-    try {
-      const mottos = await DB.getAll('mottos');
-      if (mottos.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div class="empty-icon">\u8a00</div><h4>\u6682\u65e0\u5bb6\u8bad</h4><p>\u6dfb\u52a0\u5bb6\u65cf\u79c9\u627f\u4e0e\u805a\u8bad</p></div>';
+  loadMottos() {
+    const list = document.getElementById('mottoList');
+    if (!list) return;
+    DB.getAll('mottos').then(mottos => {
+      if (!mottos || mottos.length === 0) {
+        list.innerHTML = '<div class="empty-state"><div class="empty-icon">训</div><h4>暂无家训</h4><p>添加家族家训，传承优良家风</p></div>';
         return;
       }
-      container.innerHTML = mottos.sort((a,b) => (b.id||0)-(a.id||0)).map(m => {
-        return '<div class="text-list-item">' +
-          '<h3>' + this.esc(m.title) + '</h3>' +
-          (m.author ? '<div class="meta">\u2014\u2014 ' + this.esc(m.author) + '</div>' : '') +
-          '<div class="content">' + this.esc(m.content) + '</div>' +
-          '<div style="margin-top:8px;">' +
-          '<button class="btn btn-ghost btn-sm" onclick="App.showMottoForm(' + m.id + ')" title="\u7f16\u8f91">\u270e</button>' +
-          '<button class="btn btn-ghost btn-sm" onclick="App.deleteMotto(' + m.id + ')">\u5220\u9664</button>' +
-          '</div></div>';
-      }).join('');
-    } catch(e) { console.error(e); }
+      mottos.sort((a,b) => (a.sort_order || 0) - (b.sort_order || 0));
+      list.innerHTML = mottos.map(m => `
+        <div class="motto-item" style="padding:20px;border-bottom:1px solid rgba(139,69,19,0.15);margin-bottom:12px;background:rgba(139,69,19,0.03);border-radius:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <h4 style="color:#8B0000;margin:0;font-size:18px;">${this._esc(m.title || '无标题')}</h4>
+            <div>
+              <button class="btn btn-sm" style="color:#2980b9;padding:4px 8px;font-size:12px;"
+                onclick="App.editMotto(${m.id})">编辑</button>
+              <button class="btn btn-sm" style="color:#c0392b;padding:4px 8px;font-size:12px;"
+                onclick="App.deleteMotto(${m.id})">删除</button>
+            </div>
+          </div>
+          <p style="color:#4a3728;line-height:2;white-space:pre-wrap;">${this._esc(m.content || '')}</p>
+        </div>
+      `).join('');
+    }).catch(e => console.error('loadMottos error:', e));
   },
 
-  async showMottoForm(id) {
+  showMottoForm(id) {
     const overlay = document.getElementById('mottoModalOverlay');
+    const titleEl = document.getElementById('mottoModalTitle');
+    const editId = document.getElementById('mottoEditId');
+    const titleInput = document.getElementById('mottoTitle');
+    const contentInput = document.getElementById('mottoContent');
+    const deleteBtn = document.getElementById('btnDeleteMotto');
     if (!overlay) return;
-    overlay.style.display = 'flex';
-    document.getElementById('mottoFormId').value = id || '';
-    document.getElementById('mottoTitle').value = '';
-    document.getElementById('mottoContent').value = '';
-    document.getElementById('mottoAuthor').value = '';
-    document.getElementById('mottoModalTitle').textContent = id ? '\u7f16\u8f91\u5bb6\u8bad' : '\u6dfb\u52a0\u5bb6\u8bad';
+    document.getElementById('formMotto').reset();
+
     if (id) {
-      const motto = await DB.get('mottos', id);
-      if (motto) {
-        document.getElementById('mottoTitle').value = motto.title || '';
-        document.getElementById('mottoContent').value = motto.content || '';
-        document.getElementById('mottoAuthor').value = motto.author || '';
-      }
-    }
-  },
-
-  async saveMotto(e) {
-    e.preventDefault();
-    const title = document.getElementById('mottoTitle').value.trim();
-    const content = document.getElementById('mottoContent').value.trim();
-    if (!title || !content) { this.showToast('\u8bf7\u586b\u5199\u5b8c\u6574', 'error'); return; }
-    const editId = document.getElementById('mottoFormId').value;
-    const data = { title, content, author: document.getElementById('mottoAuthor').value };
-    if (editId) data.id = parseInt(editId);
-    try {
-      await DB.put('mottos', data);
-      document.getElementById('mottoModalOverlay').style.display = 'none';
-      this.showToast(editId ? '\u5bb6\u8bad\u5df2\u66f4\u65b0' : '\u5bb6\u8bad\u5df2\u4fdd\u5b58', 'success');
-      this.loadMottos();
-      await DB.log(editId ? '\u66f4\u65b0\u5bb6\u8bad' : '\u6dfb\u52a0\u5bb6\u8bad', title);
-    } catch(e) { this.showToast('\u4fdd\u5b58\u5931\u8d25', 'error'); }
-  },
-
-  async deleteMotto(id) {
-    if (!confirm('\u786e\u5b9a\u5220\u9664\u8be5\u5bb6\u8bad\uff1f')) return;
-    try {
-      await DB.delete('mottos', id);
-      this.showToast('\u5df2\u5220\u9664', 'success');
-      this.loadMottos();
-    } catch(e) { this.showToast('\u5220\u9664\u5931\u8d25', 'error'); }
-  },
-
-  // ================ Notices ================
-
-  async loadNotices() {
-    const container = document.getElementById('noticeList');
-    if (!container) return;
-    try {
-      const notices = await DB.getAll('notices');
-      if (notices.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div class="empty-icon">\u544a</div><h4>\u6682\u65e0\u516c\u544a</h4><p>\u53d1\u5e03\u5bb6\u65cf\u91cd\u8981\u901a\u77e5</p></div>';
-        return;
-      }
-      container.innerHTML = notices.sort((a,b) => (b.id||0)-(a.id||0)).map(n => {
-        const typeLabel = n.type === 'important' ? '\u3010\u91cd\u8981\u3011' : n.type === 'event' ? '\u3010\u6d3b\u52a8\u3011' : '';
-        return '<div class="text-list-item">' +
-          '<h3>' + typeLabel + this.esc(n.title) + '</h3>' +
-          '<div class="meta">' + (n.author ? this.esc(n.author) + ' \u00b7 ' : '') + (n.created_at ? new Date(n.created_at).toLocaleDateString('zh-CN') : '') + '</div>' +
-          '<div class="content">' + this.esc(n.content) + '</div>' +
-          '<div style="margin-top:8px;">' +
-          '<button class="btn btn-ghost btn-sm" onclick="App.showNoticeForm(' + n.id + ')" title="\u7f16\u8f91">\u270e</button>' +
-          '<button class="btn btn-ghost btn-sm" onclick="App.deleteNotice(' + n.id + ')">\u5220\u9664</button>' +
-          '</div></div>';
-      }).join('');
-    } catch(e) { console.error(e); }
-  },
-
-  async showNoticeForm(id) {
-    const overlay = document.getElementById('noticeModalOverlay');
-    if (!overlay) return;
-    overlay.style.display = 'flex';
-    document.getElementById('noticeFormId').value = id || '';
-    document.getElementById('noticeTitle').value = '';
-    document.getElementById('noticeContent').value = '';
-    document.getElementById('noticeAuthor').value = '';
-    document.getElementById('noticeType').value = 'normal';
-    document.getElementById('noticeModalTitle').textContent = id ? '\u7f16\u8f91\u516c\u544a' : '\u53d1\u5e03\u516c\u544a';
-    if (id) {
-      const notice = await DB.get('notices', id);
-      if (notice) {
-        document.getElementById('noticeTitle').value = notice.title || '';
-        document.getElementById('noticeContent').value = notice.content || '';
-        document.getElementById('noticeAuthor').value = notice.author || '';
-        document.getElementById('noticeType').value = notice.type || 'normal';
-      }
-    }
-  },
-
-  async saveNotice(e) {
-    e.preventDefault();
-    const title = document.getElementById('noticeTitle').value.trim();
-    const content = document.getElementById('noticeContent').value.trim();
-    if (!title || !content) { this.showToast('\u8bf7\u586b\u5199\u5b8c\u6574', 'error'); return; }
-    const editId = document.getElementById('noticeFormId').value;
-    const data = {
-      title, content,
-      type: document.getElementById('noticeType').value,
-      author: document.getElementById('noticeAuthor').value,
-      created_at: new Date().toISOString()
-    };
-    if (editId) { data.id = parseInt(editId); delete data.created_at; }
-    try {
-      await DB.put('notices', data);
-      document.getElementById('noticeModalOverlay').style.display = 'none';
-      this.showToast(editId ? '\u516c\u544a\u5df2\u66f4\u65b0' : '\u516c\u544a\u5df2\u53d1\u5e03', 'success');
-      this.loadNotices();
-      await DB.log(editId ? '\u66f4\u65b0\u516c\u544a' : '\u53d1\u5e03\u516c\u544a', title);
-    } catch(e) { this.showToast('\u4fdd\u5b58\u5931\u8d25', 'error'); }
-  },
-
-  async deleteNotice(id) {
-    if (!confirm('\u786e\u5b9a\u5220\u9664\u8be5\u516c\u544a\uff1f')) return;
-    try {
-      await DB.delete('notices', id);
-      this.showToast('\u5df2\u5220\u9664', 'success');
-      this.loadNotices();
-    } catch(e) { this.showToast('\u5220\u9664\u5931\u8d25', 'error'); }
-  },
-
-  // ================ Statistics & Management ================
-
-  async loadStats() {
-    try {
-      const stats = await DB.getStats();
-      const ids = ['statTotal2','statMale2','statFemale2','statAlive2','statDeceased2'];
-      const vals = [stats.total, stats.male, stats.female, stats.alive, stats.deceased];
-      ids.forEach((id,i) => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = vals[i];
+      titleEl.textContent = '编辑家训';
+      deleteBtn.style.display = 'inline-block';
+      DB.get('mottos', id).then(m => {
+        editId.value = id;
+        titleInput.value = m.title || '';
+        contentInput.value = m.content || '';
       });
-
-      const canvas = document.getElementById('genBar');
-      if (canvas) {
-        const members = await DB.getAll('members');
-        const genMap = {};
-        members.forEach(m => { const g = m.generation || 1; genMap[g] = (genMap[g] || 0) + 1; });
-        const gens = Object.keys(genMap).sort((a,b)=>parseInt(a)-parseInt(b));
-        const ctx = canvas.getContext('2d');
-        const dpr = window.devicePixelRatio || 1;
-        const cw = canvas.clientWidth || 400;
-        const ch = canvas.clientHeight || 200;
-        canvas.width = cw * dpr;
-        canvas.height = ch * dpr;
-        ctx.scale(dpr, dpr);
-        ctx.clearRect(0,0,cw,ch);
-
-        const maxVal = Math.max(...Object.values(genMap), 1);
-        const barW = Math.min(50, (cw - 60) / gens.length - 8);
-        const left = 40, top = 20, bh = ch - top - 30;
-
-        gens.forEach((g, i) => {
-          const val = genMap[g];
-          const bx = left + i * (barW + 8) + (cw - left - gens.length * (barW + 8)) / 2;
-          const bH = (val / maxVal) * bh;
-          const by = top + bh - bH;
-
-          ctx.fillStyle = '#8B0000';
-          ctx.beginPath();
-          ctx.roundRect(bx, by, barW, bH, 4);
-          ctx.fill();
-
-          ctx.fillStyle = '#5D4037';
-          ctx.font = '11px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillText(val, bx + barW/2, by - 6);
-          ctx.fillText(g + '\u4ee3', bx + barW/2, top + bh + 16);
-        });
-      }
-      await this.loadLogs();
-    } catch(e) { console.error('loadStats error:', e); }
+    } else {
+      titleEl.textContent = '添加家训';
+      deleteBtn.style.display = 'none';
+      editId.value = '';
+    }
+    overlay.style.display = 'flex';
   },
 
-  async loadLogs() {
-    const container = document.getElementById('logList');
-    if (!container) return;
-    try {
-      const logs = await DB.getAll('logs');
-      if (logs.length === 0) {
-        container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.8rem;">\u6682\u65e0\u64cd\u4f5c\u8bb0\u5f55</div>';
+  saveMotto(e) {
+    e.preventDefault();
+    const id = document.getElementById('mottoEditId')?.value;
+    const title = document.getElementById('mottoTitle')?.value?.trim();
+    const content = document.getElementById('mottoContent')?.value?.trim();
+    if (!title && !content) { this.showToast('请输入内容', 'warn'); return; }
+    const data = { title, content, updated_at: new Date().toISOString() };
+    const promise = id ? DB.put('mottos', { ...data, id: parseInt(id) }) : DB.put('mottos', { ...data, sort_order: Date.now() });
+    promise.then(() => {
+      this.showToast(id ? '家训已更新' : '家训已添加');
+      document.getElementById('mottoModalOverlay').style.display = 'none';
+      this.loadMottos();
+    }).catch(e => this.showToast('保存失败: ' + e.message, 'error'));
+  },
+
+  editMotto(id) { this.showMottoForm(id); },
+
+  deleteMotto(id) {
+    if (!confirm('确定删除该家训？')) return;
+    DB.delete('mottos', id).then(() => {
+      this.showToast('家训已删除');
+      document.getElementById('mottoModalOverlay').style.display = 'none';
+      this.loadMottos();
+    }).catch(e => this.showToast('删除失败: ' + e.message, 'error'));
+  },
+
+  // ========== 公告 ==========
+
+  loadNotices() {
+    const list = document.getElementById('noticeList');
+    if (!list) return;
+    DB.getAll('notices').then(notices => {
+      if (!notices || notices.length === 0) {
+        list.innerHTML = '<div class="empty-state"><div class="empty-icon">告</div><h4>暂无公告</h4><p>发布家族公告，通知家族成员</p></div>';
         return;
       }
-      container.innerHTML = logs.sort((a,b) => (b.id||0)-(a.id||0)).slice(0, 100).map(l => {
-        const date = l.created_at ? new Date(l.created_at).toLocaleString('zh-CN') : '';
-        return '<div class="log-item">' +
-          '<span class="time">' + date + '</span>' +
-          '<span class="action">' + this.esc(l.action) + '</span>' +
-          '<span class="desc">' + this.esc(l.details||'') + '</span></div>';
-      }).join('');
-    } catch(e) { console.error(e); }
+      notices.sort((a,b) => (b.created_at || b.id || 0) - (a.created_at || a.id || 0));
+      list.innerHTML = notices.map(n => `
+        <div class="notice-item" style="padding:20px;border-bottom:1px solid rgba(139,69,19,0.15);margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+            <h4 style="color:#8B0000;margin:0;font-size:18px;">${this._esc(n.title || '无标题')}</h4>
+            <small style="color:#999;">${this._fmtDate(n.created_at)}</small>
+          </div>
+          <p style="color:#4a3728;line-height:2;white-space:pre-wrap;">${this._esc(n.content || '')}</p>
+          <div style="text-align:right;margin-top:8px;">
+            <button class="btn btn-sm" style="color:#2980b9;padding:4px 8px;font-size:12px;"
+              onclick="App.editNotice(${n.id})">编辑</button>
+            <button class="btn btn-sm" style="color:#c0392b;padding:4px 8px;font-size:12px;"
+              onclick="App.deleteNotice(${n.id})">删除</button>
+          </div>
+        </div>
+      `).join('');
+    }).catch(e => console.error('loadNotices error:', e));
   },
 
-  async exportJSON() {
-    try {
-      const data = await DB.exportAll();
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = '\u674e\u6c0f\u5bb6\u8c31_' + new Date().toISOString().slice(0,10) + '.json';
-      a.click();
-      URL.revokeObjectURL(url);
-      this.showToast('\u5bfc\u51fa\u6210\u529f', 'success');
-      await DB.log('\u5bfc\u51fa\u6570\u636e', '');
-    } catch(e) { this.showToast('\u5bfc\u51fa\u5931\u8d25', 'error'); }
+  showNoticeForm(id) {
+    const overlay = document.getElementById('noticeModalOverlay');
+    const titleEl = document.getElementById('noticeModalTitle');
+    const editId = document.getElementById('noticeEditId');
+    const titleInput = document.getElementById('noticeTitle');
+    const contentInput = document.getElementById('noticeContent');
+    const deleteBtn = document.getElementById('btnDeleteNotice');
+    if (!overlay) return;
+    document.getElementById('formNotice').reset();
+
+    if (id) {
+      titleEl.textContent = '编辑公告';
+      deleteBtn.style.display = 'inline-block';
+      DB.get('notices', id).then(n => {
+        editId.value = id;
+        titleInput.value = n.title || '';
+        contentInput.value = n.content || '';
+      });
+    } else {
+      titleEl.textContent = '发布公告';
+      deleteBtn.style.display = 'none';
+      editId.value = '';
+    }
+    overlay.style.display = 'flex';
   },
 
-  async importJSON(file) {
-    if (!file) return;
-    try {
-      const text = await file.text();
-      const data = JSON.parse(text);
-      await DB.importAll(data);
-      this.showToast('\u5bfc\u5165\u6210\u529f', 'success');
-      await DB.log('\u5bfc\u5165\u6570\u636e', '');
-      this.refreshAll();
-      FamilyTree.refresh();
-    } catch(e) { this.showToast('\u5bfc\u5165\u5931\u8d25\uff0c\u8bf7\u68c0\u67e5\u6587\u4ef6\u683c\u5f0f', 'error'); }
+  saveNotice(e) {
+    e.preventDefault();
+    const id = document.getElementById('noticeEditId')?.value;
+    const title = document.getElementById('noticeTitle')?.value?.trim();
+    const content = document.getElementById('noticeContent')?.value?.trim();
+    if (!title && !content) { this.showToast('请输入内容', 'warn'); return; }
+    const data = { title, content, updated_at: new Date().toISOString() };
+    const promise = id ? DB.put('notices', { ...data, id: parseInt(id) }) : DB.put('notices', { ...data, created_at: new Date().toISOString() });
+    promise.then(() => {
+      this.showToast(id ? '公告已更新' : '公告已发布');
+      document.getElementById('noticeModalOverlay').style.display = 'none';
+      this.loadNotices();
+    }).catch(e => this.showToast('发布失败: ' + e.message, 'error'));
   },
 
-  async resetData() {
-    if (!confirm('\u786e\u5b9a\u8981\u5f7b\u5e95\u6e05\u7a7a\u6240\u6709\u6570\u636e\u5417\uff1f\u8be5\u64cd\u4f5c\u4e0d\u53ef\u64a4\u9500\uff01')) return;
-    if (!confirm('\u518d\u6b21\u786e\u8ba4\uff1a\u8fd9\u5c06\u5220\u9664\u5bb6\u8c31\u4e2d\u6240\u6709\u6570\u636e\uff01')) return;
-    try {
-      for (const name of Object.keys(DB.STORES)) {
-        await DB.deleteAll(name);
-      }
-      this.showToast('\u6570\u636e\u5df2\u91cd\u7f6e', 'success');
-      await DB.log('\u91cd\u7f6e\u6570\u636e', '');
-      this.refreshAll();
-      FamilyTree.refresh();
-    } catch(e) { this.showToast('\u91cd\u7f6e\u5931\u8d25', 'error'); }
+  editNotice(id) { this.showNoticeForm(id); },
+
+  deleteNotice(id) {
+    if (!confirm('确定删除该公告？')) return;
+    DB.delete('notices', id).then(() => {
+      this.showToast('公告已删除');
+      document.getElementById('noticeModalOverlay').style.display = 'none';
+      this.loadNotices();
+    }).catch(e => this.showToast('删除失败: ' + e.message, 'error'));
   },
 
-  async clearLogs() {
-    if (!confirm('\u786e\u5b9a\u8981\u6e05\u7a7a\u65e5\u5fd7\u5417\uff1f')) return;
-    try {
-      await DB.deleteAll('logs');
-      this.showToast('\u65e5\u5fd7\u5df2\u6e05\u7a7a', 'success');
-      this.loadLogs();
-    } catch(e) { this.showToast('\u6e05\u7a7a\u5931\u8d25', 'error'); }
-  }
-};
+  // ========== 辅助方法 ==========
+  _esc(s) {
+    const d = document.createElement('div');
+    d.textContent = s || '';
+    return d.innerHTML;
+  },
 
-window.App = App;
+  _fmtDate(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  },
 
-// ==================== Event Registration & Init ====================
-document.addEventListener('DOMContentLoaded', async () => {
-  App.bindNavEvents();
+  // ========== DOMContentLoaded 页面初始化 ==========
 
-  const eSwitch = document.getElementById('effectsToggle');
-  if (eSwitch) {
-    eSwitch.addEventListener('click', async () => { await Effects.toggle(); });
-  }
+  async _initPage() {
+    const currentPage = getCurrentPageName();
 
-  document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const group = btn.dataset.group;
-      if (group) {
-        document.querySelectorAll('[data-group="' + group + '"]').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-      }
-      App.loadMembers();
-    });
-  });
+    // 所有页面通用的初始化
+  try { await Effects.init(); Effects.startScrollUnfold(); } catch(e) {}
+  this._initLocalStats();
 
-  const searchInput = document.getElementById('searchInput');
-  if (searchInput) searchInput.addEventListener('input', () => App.loadMembers());
+  // 绑定通用按钮事件
+  const btnAdd = document.getElementById('btnAddMember');
+  if (btnAdd) btnAdd.addEventListener('click', () => App.showMemberForm());
 
+  // 绑定表单提交
   const formMember = document.getElementById('formMember');
-  if (formMember) formMember.addEventListener('submit', e => App.saveMember(e));
-  const formLifeEvent = document.getElementById('formLifeEvent');
-  if (formLifeEvent) formLifeEvent.addEventListener('submit', e => App.saveLifeEvent(e));
-  const formPhoto = document.getElementById('formPhoto');
-  if (formPhoto) formPhoto.addEventListener('submit', e => App.savePhoto(e));
-  const formMessage = document.getElementById('formMessage');
-  if (formMessage) formMessage.addEventListener('submit', e => App.saveMessage(e));
-  const formMotto = document.getElementById('formMotto');
-  if (formMotto) formMotto.addEventListener('submit', e => App.saveMotto(e));
-  const formNotice = document.getElementById('formNotice');
-  if (formNotice) formNotice.addEventListener('submit', e => App.saveNotice(e));
+  if (formMember) formMember.addEventListener('submit', (e) => App.saveMember(e));
 
-  const closeModal = document.getElementById('btnCloseModal');
-  if (closeModal) closeModal.addEventListener('click', () => App.closeModal());
-  const cancelForm = document.getElementById('btnCancelForm');
-  if (cancelForm) cancelForm.addEventListener('click', () => App.closeModal());
-  const closeDetail = document.getElementById('btnCloseDetail');
-  if (closeDetail) closeDetail.addEventListener('click', () => App.closeDetailModal());
-  const editDetail = document.getElementById('btnEditDetail');
-  if (editDetail) editDetail.addEventListener('click', () => {
-    if (App._deleteId) { var _editId = App._deleteId; App.closeDetailModal(); App.showMemberForm(_editId); }
-  });
-  const deleteDetail = document.getElementById('btnDeleteDetail');
-  if (deleteDetail) deleteDetail.addEventListener('click', () => App.deleteCurrentMember());
+  // 绑定弹窗关闭按钮
+  const btnCancel = document.getElementById('btnCancelForm');
+  if (btnCancel) btnCancel.addEventListener('click', () => App.closeModal());
+  const btnClose = document.getElementById('btnCloseModal');
+  if (btnClose) btnClose.addEventListener('click', () => App.closeModal());
+  const btnCloseDetail = document.getElementById('btnCloseDetail');
+  if (btnCloseDetail) btnCloseDetail.addEventListener('click', () => { document.getElementById('detailModalOverlay').style.display = 'none'; });
 
-  const selFather = document.getElementById('btnSelectFather');
-  if (selFather) selFather.addEventListener('click', () => App.openRelationPicker('father'));
-  const selMother = document.getElementById('btnSelectMother');
-  if (selMother) selMother.addEventListener('click', () => App.openRelationPicker('mother'));
-  const selSpouse = document.getElementById('btnSelectSpouse');
-  if (selSpouse) selSpouse.addEventListener('click', () => App.openRelationPicker('spouse'));
-  const clrFather = document.getElementById('btnClearFather');
-  if (clrFather) clrFather.addEventListener('click', () => App.clearRelation('father'));
-  const clrMother = document.getElementById('btnClearMother');
-  if (clrMother) clrMother.addEventListener('click', () => App.clearRelation('mother'));
-  const clrSpouse = document.getElementById('btnClearSpouse');
-  if (clrSpouse) clrSpouse.addEventListener('click', () => App.clearRelation('spouse'));
-
-  document.querySelectorAll('.modal-overlay').forEach(o => {
-    o.addEventListener('click', e => {
-      if (e.target === o) {
-        o.style.display = 'none';
-        App.currentMember = null;
-        App._deleteId = null;
-      }
-    });
+  // 绑定详情弹窗中的编辑和删除按钮
+  const btnEditDetail = document.getElementById('btnEditDetail');
+  if (btnEditDetail) btnEditDetail.addEventListener('click', () => {
+    if (window.currentDetailId) App.showMemberForm(window.currentDetailId);
   });
 
-  App.handleAvatar();
+  const btnDeleteDetail = document.getElementById('btnDeleteDetail');
+  if (btnDeleteDetail) btnDeleteDetail.addEventListener('click', () => App.deleteCurrentMember());
 
-  const btnAddMember = document.getElementById('btnAddMember');
-  if (btnAddMember) btnAddMember.addEventListener('click', () => App.showMemberForm());
-  const btnAddPhoto = document.getElementById('btnAddPhoto');
-  if (btnAddPhoto) btnAddPhoto.addEventListener('click', () => App.showPhotoForm());
-  const btnAddMessage = document.getElementById('btnAddMessage');
-  if (btnAddMessage) btnAddMessage.addEventListener('click', () => App.showMessageForm());
+  // 绑定家族关系"选择"/"清除"按钮（6个按钮）
+  const btnSelFather = document.getElementById('btnSelectFather');
+  if (btnSelFather) btnSelFather.addEventListener('click', () => App.openRelationPicker('father'));
+  const btnClrFather = document.getElementById('btnClearFather');
+  if (btnClrFather) btnClrFather.addEventListener('click', () => App.clearRelation('father'));
+
+  const btnSelMother = document.getElementById('btnSelectMother');
+  if (btnSelMother) btnSelMother.addEventListener('click', () => App.openRelationPicker('mother'));
+  const btnClrMother = document.getElementById('btnClearMother');
+  if (btnClrMother) btnClrMother.addEventListener('click', () => App.clearRelation('mother'));
+
+  const btnSelSpouse = document.getElementById('btnSelectSpouse');
+  if (btnSelSpouse) btnSelSpouse.addEventListener('click', () => App.openRelationPicker('spouse'));
+  const btnClrSpouse = document.getElementById('btnClearSpouse');
+  if (btnClrSpouse) btnClrSpouse.addEventListener('click', () => App.clearRelation('spouse'));
+
+  // 留言
+  const btnAddMsg = document.getElementById('btnAddMessage');
+  if (btnAddMsg) btnAddMsg.addEventListener('click', () => { document.getElementById('messageModalOverlay').style.display = 'flex'; });
+  const formMsg = document.getElementById('formMessage');
+  if (formMsg) formMsg.addEventListener('submit', (e) => App.saveMessage(e));
+
+  // 家训
   const btnAddMotto = document.getElementById('btnAddMotto');
   if (btnAddMotto) btnAddMotto.addEventListener('click', () => App.showMottoForm());
+  const formMotto = document.getElementById('formMotto');
+  if (formMotto) formMotto.addEventListener('submit', (e) => App.saveMotto(e));
+  const btnDelMotto = document.getElementById('btnDeleteMotto');
+  if (btnDelMotto) btnDelMotto.addEventListener('click', () => { const id = parseInt(document.getElementById('mottoEditId')?.value); if (id) App.deleteMotto(id); });
+
+  // 公告
   const btnAddNotice = document.getElementById('btnAddNotice');
   if (btnAddNotice) btnAddNotice.addEventListener('click', () => App.showNoticeForm());
-  const btnAddLifeEvent = document.getElementById('btnAddLifeEvent');
-  if (btnAddLifeEvent) btnAddLifeEvent.addEventListener('click', () => App.showLifeEventForm());
+  const formNotice = document.getElementById('formNotice');
+  if (formNotice) formNotice.addEventListener('submit', (e) => App.saveNotice(e));
+  const btnDelNotice = document.getElementById('btnDeleteNotice');
+  if (btnDelNotice) btnDelNotice.addEventListener('click', () => { const id = parseInt(document.getElementById('noticeEditId')?.value); if (id) App.deleteNotice(id); });
 
-  const closeLifeEvent = document.getElementById('btnCloseLifeEventModal');
-  if (closeLifeEvent) closeLifeEvent.addEventListener('click', () => document.getElementById('lifeEventModalOverlay').style.display='none');
-  const cancelLifeEvent = document.getElementById('btnCancelLifeEvent');
-  if (cancelLifeEvent) cancelLifeEvent.addEventListener('click', () => document.getElementById('lifeEventModalOverlay').style.display='none');
+  // 首页
+  if (currentPage === 'dashboard') {
+    App.loadDashboard();
+  }
 
-  const closePhoto = document.getElementById('btnClosePhotoModal');
-  if (closePhoto) closePhoto.addEventListener('click', () => document.getElementById('photoModalOverlay').style.display='none');
-  const cancelPhoto = document.getElementById('btnCancelPhoto');
-  if (cancelPhoto) cancelPhoto.addEventListener('click', () => document.getElementById('photoModalOverlay').style.display='none');
+  // 成员管理
+  if (currentPage === 'members') {
+    // 绑定筛选按钮
+    document.querySelectorAll('#memberFilters .filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const group = btn.dataset.group;
+        document.querySelectorAll(`#memberFilters .filter-btn[data-group="${group}"]`).forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        App.loadMembers();
+      });
+    });
 
-  const closeMessage = document.getElementById('btnCloseMessageModal');
-  if (closeMessage) closeMessage.addEventListener('click', () => document.getElementById('messageModalOverlay').style.display='none');
-  const cancelMessage = document.getElementById('btnCancelMessage');
-  if (cancelMessage) cancelMessage.addEventListener('click', () => document.getElementById('messageModalOverlay').style.display='none');
+    // 绑定搜索框
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+      searchInput.addEventListener('input', () => App.loadMembers());
+    }
 
-  const closeMotto = document.getElementById('btnCloseMottoModal');
-  if (closeMotto) closeMotto.addEventListener('click', () => document.getElementById('mottoModalOverlay').style.display='none');
-  const cancelMotto = document.getElementById('btnCancelMotto');
-  if (cancelMotto) cancelMotto.addEventListener('click', () => document.getElementById('mottoModalOverlay').style.display='none');
+    App.loadMembers();
+  }
 
-  const closeNotice = document.getElementById('btnCloseNoticeModal');
-  if (closeNotice) closeNotice.addEventListener('click', () => document.getElementById('noticeModalOverlay').style.display='none');
-  const cancelNotice = document.getElementById('btnCancelNotice');
-  if (cancelNotice) cancelNotice.addEventListener('click', () => document.getElementById('noticeModalOverlay').style.display='none');
+  // 留言
+  if (currentPage === 'messages') App.loadMessages();
 
-  const importFile = document.getElementById('importFile');
-  if (importFile) importFile.addEventListener('change', e => {
-    if (e.target.files[0]) App.importJSON(e.target.files[0]);
-    e.target.value = '';
-  });
+  // 家训
+  if (currentPage === 'mottos') App.loadMottos();
 
-  const btnExport = document.getElementById('btnExportJSON');
-  if (btnExport) btnExport.addEventListener('click', () => App.exportJSON());
-  const btnReset = document.getElementById('btnResetData');
-  if (btnReset) btnReset.addEventListener('click', () => App.resetData());
-  const btnClearLogs = document.getElementById('btnClearLogs');
-  if (btnClearLogs) btnClearLogs.addEventListener('click', () => App.clearLogs());
+  // 公告
+  if (currentPage === 'notices') App.loadNotices();
 
-  const btnZoomIn = document.getElementById('treeZoomIn');
-  if (btnZoomIn) btnZoomIn.addEventListener('click', () => FamilyTree.zoomIn());
-  const btnZoomOut = document.getElementById('treeZoomOut');
-  if (btnZoomOut) btnZoomOut.addEventListener('click', () => FamilyTree.zoomOut());
-  const btnFit = document.getElementById('treeFit');
-  if (btnFit) btnFit.addEventListener('click', () => FamilyTree.fitToScreen());
-    const btnExpand = document.getElementById('treeExpandAll');
-    if (btnExpand) btnExpand.addEventListener('click', () => FamilyTree.expandAll());
-    const btnCollapse = document.getElementById('treeCollapseAll');
-    if (btnCollapse) btnCollapse.addEventListener('click', () => FamilyTree.collapseAll());
+  // 统计页面
+  if (currentPage === 'stats') {
+    // 绑定重置数据按钮
+    const btnReset = document.getElementById('btnResetData');
+    if (btnReset) btnReset.addEventListener('click', () => App.resetDB());
+    App.loadDashboard();
+  }
 
-  // 初始化祭奠堂（不阻塞）
-  try { await Memorial.init(); } catch(e) { console.error("Memorial.init 失败：", e); }
-  FamilyTree.init('treeCanvas', (id) => { App.showMemberDetail(id); });
-  FamilyTree.refresh();
+  // 家族树
+  if (currentPage === 'tree' && typeof FamilyTree !== 'undefined') {
+    try {
+      FamilyTree.init('treeContainer', (id) => { App.showMemberDetail(id); });
+      FamilyTree.refresh();
 
-  await Effects.init();
-  Effects.startScrollUnfold();
-  Effects.startAll();
-  App.loadDashboard();
-});
+      // 绑定工具栏按钮事件
+      const btnExpandAll = document.getElementById('treeExpandAll');
+      const btnCollapseAll = document.getElementById('treeCollapseAll');
+      const btnZoomIn = document.getElementById('treeZoomIn');
+      const btnZoomOut = document.getElementById('treeZoomOut');
+      const btnFit = document.getElementById('treeFit');
+
+      if (btnExpandAll) btnExpandAll.addEventListener('click', () => FamilyTree.expandAll());
+      if (btnCollapseAll) btnCollapseAll.addEventListener('click', () => FamilyTree.collapseAll());
+      if (btnZoomIn) btnZoomIn.addEventListener('click', () => FamilyTree.zoomIn());
+      if (btnZoomOut) btnZoomOut.addEventListener('click', () => FamilyTree.zoomOut());
+      if (btnFit) btnFit.addEventListener('click', () => FamilyTree.fitToScreen());
+    } catch(e) { console.error('FamilyTree init error:', e); }
+  }
+
+  // 祭奠堂
+  if (currentPage === 'memorial') {
+    if (typeof Memorial !== 'undefined') {
+      try { await Memorial.init(); } catch(e) { console.error('Memorial init error:', e); }
+    }
+    if (typeof Effects !== 'undefined') {
+      try { Effects.startAll(); } catch(e) {}
+    }
+  }
+
+  }
+
+};
+
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', () => App._initPage());
 
 
 

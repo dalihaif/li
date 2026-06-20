@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>数据迁移 - 李氏家谱</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family: "Noto Serif SC","STSong",serif; background: #FFF8F0; color: #3E2723; min-height:100vh; display:flex; align-items:center; justify-content:center; }
+    .card { background:#FFF; border-radius:16px; box-shadow:0 8px 32px rgba(60,30,10,0.12); padding:40px; max-width:520px; width:90%; text-align:center; }
+    h1 { font-size:1.5rem; color:#8B0000; margin-bottom:8px; }
+    p { color:#5D4037; font-size:0.95rem; margin-bottom:20px; line-height:1.6; }
+    .btn { display:inline-block; padding:12px 28px; border-radius:8px; border:none; font-size:1rem; cursor:pointer; margin:8px; transition:all 0.2s; }
+    .btn-primary { background:linear-gradient(135deg,#8B0000,#A0522D); color:#FFF; }
+    .btn-primary:hover { transform:translateY(-2px); box-shadow:0 4px 16px rgba(139,0,0,0.3); }
+    .btn-secondary { background:#F5E6C8; color:#5D4037; }
+    .status { margin-top:20px; padding:12px; border-radius:8px; font-size:0.9rem; display:none; }
+    .status.success { display:block; background:#E8F5E9; color:#2E7D32; }
+    .status.error { display:block; background:#FFEBEE; color:#C62828; }
+    .status.info { display:block; background:#E3F2FD; color:#1565C0; }
+    .step { text-align:left; margin:16px 0; padding:12px; background:#FFFBF5; border-radius:8px; border-left:4px solid #D4AF37; font-size:0.85rem; color:#5D4037; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>📦 数据迁移工具</h1>
+    <p>将浏览器本地 IndexedDB 中的数据迁移到服务器</p>
+
+    <div class="step">
+      <b>说明：</b>此工具会读取浏览器中存储的族谱数据，然后通过 API 发送到服务器保存。迁移后，所有设备访问同一服务器即可共享数据。
+    </div>
+
+    <button class="btn btn-primary" onclick="doMigrate()">🚀 开始迁移</button>
+    <button class="btn btn-secondary" onclick="doExport()">💾 仅导出 JSON</button>
+
+    <div id="status"></div>
+  </div>
+
+  <script>
+    const API = '/api';
+
+    function showStatus(msg, type) {
+      const el = document.getElementById('status');
+      el.className = 'status ' + type;
+      el.textContent = msg;
+    }
+
+    // 从 IndexedDB 读取所有数据
+    function readIndexedDB() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open('LiFamilyTree', 3);
+        req.onsuccess = () => {
+          const db = req.result;
+          const stores = ['members','mottos','notices','logs','lifeEvents','messages','photos','settings'];
+          const data = {};
+          let done = 0;
+          stores.forEach(name => {
+            try {
+              const tx = db.transaction(name, 'readonly');
+              const store = tx.objectStore(name);
+              const r = store.getAll();
+              r.onsuccess = () => {
+                if (name === 'settings') {
+                  // settings 转成对象
+                  const arr = r.result || [];
+                  data[name] = {};
+                  arr.forEach(it => { data[name][it.key] = it.value; });
+                } else {
+                  data[name] = r.result || [];
+                }
+                done++;
+                if (done === stores.length) resolve(data);
+              };
+              r.onerror = () => {
+                data[name] = (name === 'settings') ? {} : [];
+                done++;
+                if (done === stores.length) resolve(data);
+              };
+            } catch(e) {
+              data[name] = (name === 'settings') ? {} : [];
+              done++;
+              if (done === stores.length) resolve(data);
+            }
+          });
+        };
+        req.onerror = () => reject(new Error('无法打开 IndexedDB，可能数据不存在'));
+      });
+    }
+
+    // 迁移：读 IndexedDB → 发送到服务器
+    async function doMigrate() {
+      showStatus('正在读取本地数据...', 'info');
+      try {
+        const data = await readIndexedDB();
+        const memberCount = (data.members || []).length;
+        if (memberCount === 0) {
+          showStatus('本地没有找到数据，无需迁移。', 'error');
+          return;
+        }
+        showStatus(`已读取 ${memberCount} 位成员，正在发送到服务器...`, 'info');
+        const res = await fetch(`${API}/data`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        const json = await res.json();
+        if (json.success) {
+          showStatus(`✅ 迁移成功！${memberCount} 位成员数据已保存到服务器。`, 'success');
+        } else {
+          showStatus('❌ 保存失败：' + (json.error || '未知错误'), 'error');
+        }
+      } catch (e) {
+        showStatus('❌ 迁移失败：' + e.message, 'error');
+      }
+    }
+
+    // 仅导出 JSON 文件
+    async function doExport() {
+      showStatus('正在读取本地数据...', 'info');
+      try {
+        const data = await readIndexedDB();
+        const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'lishi-zupu-backup.json';
+        a.click();
+        URL.revokeObjectURL(url);
+        showStatus('✅ JSON 文件已下载，可手动导入到服务器。', 'success');
+      } catch (e) {
+        showStatus('❌ 导出失败：' + e.message, 'error');
+      }
+    }
+  </script>
+</body>
+</html>
