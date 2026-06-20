@@ -199,4 +199,60 @@ const DB = {
     this._loaded = true;
     await this._save();
   },
+
+  /* ========== 兼容方法（app.js 依赖这些命名） ========== */
+
+  /* DB.put() — 有 id 则更新，无 id 则新增 */
+  async put(table, item) {
+    if (item.id) {
+      return await this.update(table, item.id, item);
+    } else {
+      return await this.add(table, item);
+    }
+  },
+
+  /* DB.get() — 别名，调用 getById() */
+  async get(table, id) {
+    return await this.getById(table, id);
+  },
+
+  /* DB.getStats() — 获取统计数据 */
+  async getStats() {
+    const members = await this.getAll('members');
+    const total = members.length;
+    const male = members.filter(m => m.gender === 'male').length;
+    const female = members.filter(m => m.gender === 'female').length;
+    const alive = members.filter(m => !m.death_date).length;
+    const deceased = members.filter(m => m.death_date).length;
+    return { total, male, female, alive, deceased };
+  },
+
+  /* DB.getLifeEvents(memberId) — 获取成员的生命事件 */
+  async getLifeEvents(memberId) {
+    const events = await this.getAll('lifeEvents');
+    return events.filter(e => e.member_id === memberId);
+  },
+
+  /* DB.getPhotos(memberId) — 获取成员的照片 */
+  async getPhotos(memberId) {
+    const photos = await this.getAll('photos');
+    return photos.filter(p => p.member_id === memberId);
+  },
+
+  /* DB.getMessages(memberId) — 获取成员的留言（或全部） */
+  async getMessages(memberId) {
+    const messages = await this.getAll('messages');
+    if (memberId) {
+      return messages.filter(m => m.member_id === memberId);
+    }
+    return messages;
+  },
+
+  /* DB.deleteAll(table) — 删除表中所有数据 */
+  async deleteAll(table) {
+    const data = await this.open();
+    data[table] = [];
+    this._cache = data;
+    await this._save();
+  },
 };

@@ -73,9 +73,13 @@ const GitHubAPI = {
   async writeFile(path, content, sha, message = '更新族谱数据') {
     const c = this._getConfig();
     const url = `https://api.github.com/repos/${c.owner}/${c.repo}/contents/${path}`;
+    
+    // 正确的 Base64 编码（支持 Unicode）
+    const base64Content = this._utf8ToBase64(content);
+    
     const body = {
       message,
-      content: btoa(unescape(encodeURIComponent(content))),
+      content: base64Content,
       branch: c.branch || 'main',
     };
     if (sha) body.sha = sha;
@@ -91,6 +95,46 @@ const GitHubAPI = {
     }
     const data = await res.json();
     return data.content.sha;
+  },
+
+  /* 
+   * Unicode 字符串转 Base64（浏览器兼容）
+   */
+  _utf8ToBase64(str) {
+    // 方法1：适用于所有现代浏览器
+    if (typeof btoa !== 'undefined') {
+      try {
+        return btoa(unescape(encodeURIComponent(str)));
+      } catch (e) {}
+    }
+    
+    // 方法2：使用 TextEncoder（更现代）
+    if (typeof TextEncoder !== 'undefined') {
+      const bytes = new TextEncoder().encode(str);
+      let binary = '';
+      bytes.forEach(b => binary += String.fromCharCode(b));
+      return btoa(binary);
+    }
+    
+    // 降级：假设是 ASCII
+    return btoa(str);
+  },
+
+  /* 
+   * Base64 转 Unicode 字符串（浏览器兼容）
+   */
+  _base64ToUtf8(base64) {
+    const binaryStr = atob(base64);
+    
+    if (typeof TextDecoder !== 'undefined') {
+      const bytes = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) {
+        bytes[i] = binaryStr.charCodeAt(i);
+      }
+      return new TextDecoder().decode(bytes);
+    }
+    
+    return decodeURIComponent(escape(binaryStr));
   },
 
   /* 

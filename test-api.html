@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>李氏家谱 - API 测试</title>
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="main-content" style="max-width:800px; margin:40px auto;">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">GitHub API 连接测试</div>
+      </div>
+      <div class="card-body">
+        <div class="form-group">
+          <label class="form-label">步骤 1：配置 GitHub 仓库信息</label>
+          <div style="display:flex; gap:12px; flex-wrap:wrap;">
+            <input type="text" class="form-input" id="inputOwner" placeholder="用户名（如 dalihaif）" style="flex:1;">
+            <input type="text" class="form-input" id="inputRepo" placeholder="仓库名（如 lishi-zupu）" style="flex:1;">
+            <input type="text" class="form-input" id="inputBranch" placeholder="分支（如 main）" style="flex:1;">
+          </div>
+          <input type="password" class="form-input" id="inputToken" placeholder="GitHub Personal Access Token（ghp_开头）" style="width:100%; margin-top:8px;">
+          <button class="btn btn-primary" id="btnSaveConfig" style="margin-top:12px;">保存配置</button>
+        </div>
+
+        <hr style="margin:24px 0; border:none; border-top:1px solid var(--border-light);">
+
+        <div class="form-group">
+          <label class="form-label">步骤 2：测试连接</label>
+          <button class="btn btn-primary" id="btnTest">测试 GitHub 连接</button>
+          <div id="testResult" style="margin-top:12px;"></div>
+        </div>
+
+        <hr style="margin:24px 0; border:none; border-top:1px solid var(--border-light);">
+
+        <div class="form-group">
+          <label class="form-label">步骤 3：测试数据读写</label>
+          <button class="btn btn-primary" id="btnTestWrite">测试写入数据</button>
+          <div id="writeResult" style="margin-top:12px;"></div>
+        </div>
+
+        <hr style="margin:24px 0; border:none; border-top:1px solid var(--border-light);">
+
+        <div class="form-group">
+          <label class="form-label">步骤 4：检查 data/family.json 是否存在</label>
+          <a href="https://github.com/dalihaif/lishi-zupu/tree/main/data" target="_blank" class="btn btn-secondary">在 GitHub 查看 data/ 目录</a>
+          <p style="margin-top:8px; font-size:0.85rem; color:var(--text-secondary);">
+            如果看到 <code>family.json</code> 文件，说明数据已初始化。<br>
+            如果没有，点击上方"测试写入数据"按钮来创建它。
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/github-api.js"></script>
+  <script>
+    document.getElementById('btnSaveConfig').addEventListener('click', () => {
+      const owner = document.getElementById('inputOwner').value.trim();
+      const repo = document.getElementById('inputRepo').value.trim();
+      const branch = document.getElementById('inputBranch').value.trim() || 'main';
+      const token = document.getElementById('inputToken').value.trim();
+      
+      if (!owner || !repo || !token) {
+        alert('请填写所有字段！');
+        return;
+      }
+      
+      GitHubAPI.saveConfig({ owner, repo, branch, token });
+      alert('✅ 配置已保存到 localStorage！\n\n现在点击"测试 GitHub 连接"按钮。');
+    });
+
+    document.getElementById('btnTest').addEventListener('click', async () => {
+      const resultDiv = document.getElementById('testResult');
+      resultDiv.innerHTML = '<p style="color:var(--text-secondary);">⏳ 测试中...</p>';
+      
+      if (!GitHubAPI.isConfigured()) {
+        resultDiv.innerHTML = '<p style="color:var(--danger);">❌ 请先保存配置！</p>';
+        return;
+      }
+      
+      try {
+        const ok = await GitHubAPI.verifyToken();
+        if (ok) {
+          resultDiv.innerHTML = '<p style="color:var(--success);">✅ 连接成功！GitHub Token 有效。</p>';
+        } else {
+          resultDiv.innerHTML = '<p style="color:var(--danger);">❌ 连接失败！Token 无效或仓库不存在。</p>';
+        }
+      } catch (e) {
+        resultDiv.innerHTML = '<p style="color:var(--danger);">❌ 错误：' + e.message + '</p>';
+      }
+    });
+
+    document.getElementById('btnTestWrite').addEventListener('click', async () => {
+      const resultDiv = document.getElementById('writeResult');
+      resultDiv.innerHTML = '<p style="color:var(--text-secondary);">⏳ 写入中...</p>';
+      
+      if (!GitHubAPI.isConfigured()) {
+        resultDiv.innerHTML = '<p style="color:var(--danger);">❌ 请先保存配置并测试连接！</p>';
+        return;
+      }
+      
+      try {
+        // 测试写入一个空的 family.json
+        const testData = {
+          members: [],
+          messages: [{ id: 'test_' + Date.now(), author: '测试', content: '测试留言', created_at: new Date().toISOString() }],
+          mottos: [],
+          notices: [],
+          settings: {}
+        };
+        
+        await GitHubAPI.saveData(testData);
+        resultDiv.innerHTML = '<p style="color:var(--success);">✅ 写入成功！数据已保存到 GitHub 仓库。</p>' +
+          '<p style="font-size:0.85rem; color:var(--text-secondary); margin-top:8px;">请访问 <a href="https://github.com/' + GitHubAPI._getConfig().owner + '/' + GitHubAPI._getConfig().repo + '/tree/main/data" target="_blank">GitHub 仓库</a> 查看 family.json 文件。</p>';
+      } catch (e) {
+        resultDiv.innerHTML = '<p style="color:var(--danger);">❌ 写入失败：' + e.message + '</p>' +
+          '<p style="font-size:0.85rem; color:var(--text-secondary); margin-top:8px;">可能的原因：<br>1. Token 权限不足（需要 repo 权限）<br>2. 仓库不存在<br>3. 网络连接问题</p>';
+      }
+    });
+
+    // 页面加载时，自动填充已保存的配置
+    window.addEventListener('DOMContentLoaded', () => {
+      const config = GitHubAPI._getConfig();
+      if (config) {
+        document.getElementById('inputOwner').value = config.owner || '';
+        document.getElementById('inputRepo').value = config.repo || '';
+        document.getElementById('inputBranch').value = config.branch || 'main';
+        document.getElementById('inputToken').value = config.token || '';
+      }
+    });
+  </script>
+</body>
+</html>
