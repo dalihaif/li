@@ -1,14 +1,14 @@
 # 李氏家谱
 
-一个基于浏览器的中文家族族谱管理系统，纯前端实现，数据存储在本地浏览器中。无需服务器、无需数据库，打开即用。
+纯前端家族族谱管理系统，**数据存储在 GitHub 仓库**（通过 GitHub API 读写），无需自建服务器。部署到 GitHub Pages 后，家人即可在线访问。
 
-![李氏家谱](https://img.shields.io/badge/纯前端-HTML%2FCSS%2FJS-green) ![IndexedDB](https://img.shields.io/badge/数据存储-IndexedDB-blue) ![隐私](https://img.shields.io/badge/隐私-100%25本地-orange)
+![纯前端](https://img.shields.io/badge/纯前端-HTML%2FCSS%2FJS-green) ![GitHub API](https://img.shields.io/badge/数据存储-GitHub%20API-blue) ![隐私](https://img.shields.io/badge/隐私-仓库私有-orange)
 
 ---
 
 ## ✨ 功能特性
 
-### 🏠 首页 dashboard
+### 🏠 首页 Dashboard
 - 家族总人数、男女比例、在世/已故统计
 - 最近加入成员展示
 - 快捷功能入口（家族树、祭奠堂、导入数据等）
@@ -48,12 +48,12 @@
 | 类别 | 技术 |
 |------|------|
 | 前端 | 原生 HTML5 / CSS3 / JavaScript（ES6+） |
-| 数据存储 | IndexedDB（浏览器本地） |
+| 数据存储 | GitHub 仓库 `data/family.json`（GitHub API 读写） |
 | 图表 | Chart.js（统计页面） |
 | 架构 | MPA（多页面应用），共享 `common.js + db.js + app.js` |
-| 部署 | 纯静态，任意 HTTP 服务器即可 |
+| 部署 | GitHub Pages（静态页面）+ GitHub API（数据读写） |
 
-**零依赖、零构建、零后端** — 直接打开 `index.html` 即可使用。
+**零后端、零数据库** — 数据存在你的 GitHub 仓库里，完全由你掌控。
 
 ---
 
@@ -62,61 +62,94 @@
 ```
 lishi-zupu/
 ├── index.html          # 首页（统计概览）
-├── members.html        # 成员管理
+├── members.html       # 成员管理
 ├── tree.html          # 家族树
 ├── memorial.html      # 祭奠堂
-├── messages.html       # 留言板
-├── mottos.html        # 家训管理
-├── notices.html       # 公告栏
-├── stats.html         # 统计分析
+├── messages.html      # 留言板
+├── mottos.html      # 家训管理
+├── notices.html      # 公告栏
+├── stats.html        # 统计分析
+├── settings.html      # ⚙️ GitHub 仓库配置
 ├── css/
 │   ├── common.css     # 通用样式（导航栏、弹窗、表单）
 │   └── style.css     # 主题样式（家谱配色、卡片、家族树）
 ├── js/
 │   ├── common.js      # 通用工具函数
-│   ├── db.js          # IndexedDB 操作封装（CRUD + 家族树数据）
+│   ├── github-api.js  # GitHub API 封装（读写仓库文件）
+│   ├── db.js          # 数据层（通过 GitHub API 操作数据）
 │   ├── app.js         # 核心应用逻辑（导航、弹窗、统计、导入导出）
 │   ├── tree.js        # 家族树渲染引擎（HTML+SVG 树状图）
 │   └── memorial.js    # 祭奠堂交互逻辑
-└── assets/            # 图片等资源（可选）
+└── data/              # （仓库中自动创建）数据存储目录
+    └── family.json    # 族谱数据文件
 ```
 
 ---
 
-## 🚀 使用方法
+## 🚀 部署与使用
 
-### 方式一：本地直接打开
-1. 下载本项目到本地
-2. 用任意 HTTP 服务器托管目录（推荐以下任一方式）：
-   ```bash
-   # Python
-   python -m http.server 8000
-   
-   # Node.js
-   npx serve .
-   
-   # VS Code Live Server 插件
-   右键 index.html → Open with Live Server
+### 第一步：Fork / 克隆仓库
+
+```bash
+git clone https://github.com/dalihaif/lishi-zupu.git
+cd lishi-zupu
+```
+
+### 第二步：启用 GitHub Pages
+
+1. 进入仓库 **Settings → Pages**
+2. Source 选择 `main` 分支，目录选 `/ (root)`
+3. 保存后等待 1-2 分钟，获得访问地址：
    ```
-3. 浏览器访问 `http://localhost:8000`
+   https://dalihaif.github.io/lishi-zupu/
+   ```
 
-> ⚠️ 必须用 HTTP 服务器打开，直接双击 HTML 文件会因浏览器安全策略导致 IndexedDB 无法使用。
+### 第三步：创建 GitHub Token
 
-### 方式二：部署到任意静态托管
-将项目文件上传到 GitHub Pages、Netlify、Vercel 等静态托管服务即可。
+1. 打开 [https://github.com/settings/tokens/new](https://github.com/settings/tokens/new)
+2. 勾选权限：`repo`（完整仓库访问）
+3. 生成后**复制 Token**（只显示一次！）
+
+### 第四步：配置仓库信息
+
+1. 打开族谱页面（GitHub Pages 地址）
+2. 点击右上角 **⚙️ 设置**
+3. 填写：
+   - **GitHub 用户名**：你的用户名（如 `dalihaif`）
+   - **仓库名称**：`lishi-zupu`
+   - **分支**：`main`
+   - **Personal Access Token**：刚才复制的 Token
+4. 点击 **💾 保存配置** → 点击 **🔍 测试连接**
+
+### 第五步：初始化数据文件
+
+在设置页面点击 **📥 初始化数据文件**，会在仓库中创建 `data/family.json`。
 
 ---
 
-## 💾 数据存储说明
+## 💾 数据说明
 
-- 所有数据存储在**浏览器本地的 IndexedDB** 中，键名为 `LiFamilyDB`
-- 数据**不会上传到任何服务器**，完全隐私
-- 建议定期使用「导出数据」功能备份（JSON 格式）
-- 更换浏览器或清除浏览器数据会导致数据丢失
+- 所有数据存储在 GitHub 仓库的 `data/family.json` 文件中
+- 每次保存 = 一次 Git Commit（可在仓库 Commits 记录中查看修改历史）
+- 建议定期使用设置页面的 **📤 导出备份** 功能下载本地备份
+- 如需迁移，使用 **📥 导入备份** 功能
 
-### 导出 / 导入数据
-- **导出**：首页 → 快捷功能 →「导入数据」旁有导出功能（或控制台调用 `App.exportData()`）
-- **导入**：首页 → 快捷功能 →「导入数据」→ 选择之前导出的 JSON 文件
+### 隐私建议
+
+- 仓库建议设为 **Private**（私有），只有你授权的人能访问
+- 如果是私有仓库，GitHub Token 需要 `repo` 权限才能读写数据
+- 家人访问时，需要他们各自在浏览器中填写自己的 GitHub Token
+
+---
+
+## 🌐 让家人无需 Token 也能查看
+
+如果你希望家人**只能查看不能编辑**，可以：
+
+1. 将 `db.js` 改为**只读模式**（不保存 Token，只读取数据）
+2. 或者部署两个版本：
+   - **公开版**（只读，GitHub Pages 自动构建）
+   - **管理版**（需 Token，本地运行或单独部署）
 
 ---
 
@@ -127,7 +160,7 @@ lishi-zupu/
 | Chrome / Edge | ≥ 60 |
 | Firefox | ≥ 55 |
 | Safari | ≥ 12 |
-| 移动端 | 支持（响应式布局） |
+| 移动端 | 支持（响应式布局）|
 
 ---
 
@@ -135,7 +168,8 @@ lishi-zupu/
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
-| v1.0 | 2026-06 | 初始版本，完整功能上线 |
+| v2.0 | 2026-06 | 改为 GitHub API 存储，支持 GitHub Pages 部署 |
+| v1.0 | 2026-06 | 初始版本（IndexedDB 本地存储）|
 
 ---
 

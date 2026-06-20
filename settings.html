@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitHub 配置 - 李氏家谱</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+</head>
+<body>
+
+  <!-- 顶部导航 -->
+  <nav class="navbar">
+    <div class="nav-brand" onclick="location.href='index.html'">
+      <svg class="nav-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2">
+        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+      </svg>
+      李氏家谱
+    </div>
+    <div class="nav-links">
+      <a href="index.html">首页</a>
+      <a href="members.html">成员</a>
+      <a href="tree.html">家谱树</a>
+      <a href="memorial.html">祭奠堂</a>
+      <a href="messages.html">留言</a>
+      <a href="notices.html">公告</a>
+      <a href="settings.html" class="active">设置</a>
+    </div>
+  </nav>
+
+  <div class="container" style="max-width:520px; margin-top:32px;">
+    <h2 style="text-align:center;font-family:var(--font-family);color:var(--wood-dark);letter-spacing:4px;margin-bottom:24px;">
+      ⚙️ GitHub 仓库配置
+    </h2>
+
+    <!-- 配置表单 -->
+    <div class="card" style="padding:28px 24px;">
+      <div class="form-group">
+        <label>GitHub 用户名（仓库所有者）</label>
+        <input type="text" id="cfgOwner" class="form-control" placeholder="如：dalihaif">
+      </div>
+      <div class="form-group">
+        <label>仓库名称</label>
+        <input type="text" id="cfgRepo" class="form-control" placeholder="如：lishi-zupu">
+      </div>
+      <div class="form-group">
+        <label>分支名称</label>
+        <input type="text" id="cfgBranch" class="form-control" value="main" placeholder="main">
+      </div>
+      <div class="form-group">
+        <label>Personal Access Token</label>
+        <input type="password" id="cfgToken" class="form-control" placeholder="ghp_xxxxxxxxxxxx">
+        <small style="color:var(--text-secondary);font-size:0.78rem;display:block;margin-top:4px;">
+          需要 <code>repo</code> 权限。
+          <a href="https://github.com/settings/tokens/new?scopes=repo&description=lishi-zupu" target="_blank">点击创建 Token →</a>
+        </small>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:20px;">
+        <button class="btn btn-primary" onclick="saveConfig()" style="flex:1;">💾 保存配置</button>
+        <button class="btn btn-outline" onclick="testConfig()" style="flex:1;">🔍 测试连接</button>
+      </div>
+
+      <div id="cfgStatus" style="margin-top:14px;font-size:0.85rem;text-align:center;"></div>
+    </div>
+
+    <!-- 使用说明 -->
+    <div class="card" style="margin-top:18px;padding:20px 24px;font-size:0.82rem;color:var(--text-secondary);line-height:1.8;">
+      <h4 style="color:var(--wood-dark);margin-bottom:8px;font-size:0.95rem;">📋 使用说明</h4>
+      <ol style="padding-left:18px;">
+        <li>在 GitHub 创建仓库（建议设为 <strong>私有</strong>，族谱数据仅家人可见）</li>
+        <li>在仓库 <a href="https://github.com/settings/tokens/new?scopes=repo&description=lishi-zupu" target="_blank">创建 Personal Access Token</a>，勾选 <code>repo</code> 权限</li>
+        <li>填写上方表单并保存</li>
+        <li>首次使用请点击「📥 初始化数据文件」在仓库中创建数据文件</li>
+        <li>配置会保存在浏览器本地，换电脑需重新填写</li>
+      </ol>
+    </div>
+
+    <!-- 数据管理 -->
+    <div class="card" style="margin-top:18px;padding:20px 24px;">
+      <h4 style="color:var(--wood-dark);margin-bottom:12px;font-size:0.95rem;">🔧 数据管理</h4>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-outline" onclick="initDataFile()" style="flex:1;min-width:140px;">📥 初始化数据文件</button>
+        <button class="btn btn-outline" onclick="exportData()" style="flex:1;min-width:140px;">📤 导出备份</button>
+        <button class="btn btn-outline" onclick="importData()" style="flex:1;min-width:140px;">📥 导入备份</button>
+      </div>
+      <input type="file" id="importFile" accept=".json" style="display:none;" onchange="doImport(event)">
+      <div id="dataStatus" style="margin-top:10px;font-size:0.82rem;"></div>
+    </div>
+
+    <!-- 部署说明 -->
+    <div class="card" style="margin-top:18px;padding:20px 24px;font-size:0.82rem;color:var(--text-secondary);line-height:1.8;">
+      <h4 style="color:var(--wood-dark);margin-bottom:8px;font-size:0.95rem;">🚀 部署到 GitHub Pages</h4>
+      <ol style="padding-left:18px;">
+        <li>确保仓库已推送最新代码（含 <code>settings.html</code>）</li>
+        <li>进入仓库 Settings → Pages → Source 选择 <code>main</code> 分支</li>
+        <li>访问 <code>https://你的用户名.github.io/仓库名/</code></li>
+        <li>首次打开页面，点击右上角 ⚙️ 填写仓库配置</li>
+        <li>填写与你创建 Token 时相同的 GitHub 用户名</li>
+      </ol>
+    </div>
+
+    <div style="text-align:center;margin:24px 0 32px;font-size:0.78rem;color:var(--text-secondary);">
+      <a href="index.html" style="color:var(--gold-dark);">← 返回首页</a>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
+
+  <script src="js/github-api.js"></script>
+  <script>
+    /* ========== 页面初始化 ========== */
+    document.addEventListener('DOMContentLoaded', () => {
+      // 回显已有配置
+      try {
+        const saved = localStorage.getItem('github_config');
+        if (saved) {
+          const c = JSON.parse(saved);
+          document.getElementById('cfgOwner').value = c.owner || '';
+          document.getElementById('cfgRepo').value = c.repo || '';
+          document.getElementById('cfgBranch').value = c.branch || 'main';
+          document.getElementById('cfgToken').value = c.token || '';
+          showStatus('已有配置，可直接使用 ✅', 'green');
+        }
+      } catch (e) {}
+    });
+
+    /* 保存配置 */
+    function saveConfig() {
+      const owner = document.getElementById('cfgOwner').value.trim();
+      const repo = document.getElementById('cfgRepo').value.trim();
+      const branch = document.getElementById('cfgBranch').value.trim() || 'main';
+      const token = document.getElementById('cfgToken').value.trim();
+
+      if (!owner || !repo || !token) {
+        showStatus('❌ 请填写所有必填项', 'red');
+        return;
+      }
+
+      GitHubAPI.saveConfig({ owner, repo, branch, token });
+      showStatus('✅ 配置已保存！现在可以测试连接了。', 'green');
+    }
+
+    /* 测试连接 */
+    async function testConfig() {
+      if (!GitHubAPI.isConfigured()) {
+        showStatus('❌ 请先保存配置', 'red');
+        return;
+      }
+      showStatus('⏳ 正在测试连接...', '#B8860B');
+      try {
+        const ok = await GitHubAPI.verifyToken();
+        if (ok) {
+          showStatus('✅ 连接成功！GitHub Token 有效，仓库可访问。', 'green');
+        } else {
+          showStatus('❌ Token 无效或仓库不可访问，请检查配置。', 'red');
+        }
+      } catch (e) {
+        showStatus('❌ 连接失败：' + e.message, 'red');
+      }
+    }
+
+    /* 初始化数据文件（在仓库中创建 data/family.json） */
+    async function initDataFile() {
+      if (!GitHubAPI.isConfigured()) {
+        showStatus('❌ 请先保存配置', 'red');
+        return;
+      }
+      if (!confirm('确认在仓库中创建 data/family.json 数据文件？\n如果文件已存在会被覆盖为空白数据。')) return;
+
+      showStatus('⏳ 正在创建数据文件...', '#B8860B');
+      try {
+        const emptyData = { members: [], messages: [], mottos: [], notices: [], settings: {} };
+        // 尝试读取，如果存在就用已有内容
+        const existing = await GitHubAPI.readFile('data/family.json');
+        if (existing) {
+          showStatus('ℹ️ 数据文件已存在，无需初始化。', '#B8860B');
+          return;
+        }
+      } catch (e) {}
+
+      try {
+        await GitHubAPI.writeFile(
+          'data/family.json',
+          JSON.stringify({ members: [], messages: [], mottos: [], notices: [], settings: {} }, null, 2),
+          null,
+          '初始化族谱数据文件'
+        );
+        showStatus('✅ 数据文件创建成功！现在可以使用了。', 'green');
+      } catch (e) {
+        showStatus('❌ 创建失败：' + e.message, 'red');
+      }
+    }
+
+    /* 导出备份 */
+    async function exportData() {
+      if (!GitHubAPI.isConfigured()) {
+        showStatus('❌ 请先保存配置', 'red');
+        return;
+      }
+      try {
+        const data = await GitHubAPI.loadData();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `李氏家谱备份_${new Date().toISOString().slice(0,10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showDataStatus('✅ 备份文件已下载', 'green');
+      } catch (e) {
+        showDataStatus('❌ 导出失败：' + e.message, 'red');
+      }
+    }
+
+    /* 触发导入文件选择 */
+    function importData() {
+      document.getElementById('importFile').click();
+    }
+
+    /* 执行导入 */
+    async function doImport(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      if (!confirm('导入会覆盖服务器数据，确认继续？')) return;
+
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        showDataStatus('⏳ 正在导入数据...', '#B8860B');
+        await GitHubAPI.saveData(data);
+        showDataStatus('✅ 导入成功！刷新页面即可看到新数据。', 'green');
+      } catch (e) {
+        showDataStatus('❌ 导入失败：' + e.message, 'red');
+      }
+      event.target.value = '';
+    }
+
+    /* 状态提示 */
+    function showStatus(msg, color) {
+      const el = document.getElementById('cfgStatus');
+      el.style.color = color;
+      el.textContent = msg;
+    }
+    function showDataStatus(msg, color) {
+      const el = document.getElementById('dataStatus');
+      el.style.color = color;
+      el.textContent = msg;
+    }
+  </script>
+</body>
+</html>

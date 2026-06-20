@@ -1,35 +1,27 @@
 /* ==========================================
-   李氏家谱 - API 数据层
-   从服务器读取/写入数据，纯前端无本地存储
+   李氏家谱 - 数据层（GitHub API 模式）
+   通过 GitHub API 读写仓库中的 JSON 数据
    ========================================== */
 
 const DB = {
-  // 内存缓存：所有数据存在这里
   _cache: null,
-  // API 基础地址（自动适配当前域名，也可手动修改）
-  _baseURL: (() => {
-    // 开发环境可用 localhost:3000，生产环境自动用当前域名
-    return window.location.origin + '/api';
-  })(),
   _loaded: false,
   _saving: false,
+  _saveQueue: [],
 
-  /* ========== 初始化：从服务器加载全部数据 ========== */
+  /* ========== 初始化：从 GitHub 加载全部数据 ========== */
   async open() {
     if (this._loaded) return this._cache;
+    if (!GitHubAPI.isConfigured()) {
+      throw new Error('请先配置 GitHub 仓库信息（点击右上角 ⚙️ 设置）');
+    }
     try {
-      const res = await fetch(`${this._baseURL}/data`, { cache: 'no-store' });
-      const json = await res.json();
-      if (json.success && json.data) {
-        this._cache = json.data;
-      } else {
-        this._cache = this._emptyData();
-      }
+      const data = await GitHubAPI.loadData();
+      this._cache = data;
     } catch (e) {
-      console.error('❌ 无法连接服务器:', e);
-      // 服务器不可用时，用空数据（页面仍可打开，但无法保存）
+      console.error('❌ 无法从 GitHub 加载数据:', e);
       this._cache = this._emptyData();
-      this._offline = true;
+      throw e;
     }
     this._loaded = true;
     return this._cache;
@@ -39,158 +31,91 @@ const DB = {
     return { members: [], messages: [], mottos: [], notices: [], settings: {} };
   },
 
-  /* ========== 保存到服务器 ========== */
+  /* ========== 保存队列（防止并发写入冲突） ========== */
   async _save() {
-    if (this._offline) {
-      throw new Error('当前离线，无法保存到服务器');
-    }
     if (this._saving) {
       // 上一次保存还没完成，等一会儿再试
-      await new Promise(r => setTimeout(r, 300));
+      await new Promise(r => setTimeout(r, 500));
       return this._save();
     }
     this._saving = true;
     try {
-      const res = await fetch(`${this._baseURL}/data`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(this._cache)
-      });
-      const json = await res.json();
-      if (!json.success) throw new Error(json.error || '保存失败');
+      await GitHubAPI.saveData(this._cache);
+      console.log('✅ 数据已保存到 GitHub');
     } catch (e) {
-      this._saving = false;
+      console.error('❌ 保存失败:', e);
       throw e;
+    } finally {
+      this._saving = false;
     }
-    this._saving = false;
   },
 
-  /* ========== 通用读写接口（兼容旧 IndexedDB 方法名） ========== */
-
-  // 获取整个 store 的数据
-  async getAll(storeName) {
-    await this.open();
-    if (storeName === 'settings') {
-      // settings 是 key-value 对象，不是数组
-      return this._settingsToArray(this._cache.settings || {});
-    }
-    return this._cache[storeName] || [];
+  _saveAsync() {
+    // 异步保存，不阻塞 UI
+    setTimeout(() => this._save().catch(e => console.error('后台保存失败:', e)), 100);
   },
 
-  // 按 ID 获取单条
-  async get(storeName, id) {
-    await this.open();
-    if (storeName === 'settings') {
-      const s = (this._cache.settings || {})[id];
-      return s ? { key: id, value: s } : null;
-    }
-    const items = this._cache[storeName] || [];
-    return items.find(it => it.id === id) || null;
+  /* ========== 成员操作 ========== */
+  async getAll(table) {
+    const data = await this.open();
+    return data[table] || [];
   },
 
-  // 写入（add 或 update 都走这个）
-  async put(storeName, data) {
-    await this.open();
-    if (storeName === 'settings') {
-      if (!this._cache.settings) this._cache.settings = {};
-      this._cache.settings[data.key] = data.value;
-      await this._save();
-      return data;
-    }
-    let items = this._cache[storeName] || [];
-    const idx = items.findIndex(it => it.id === data.id);
-    if (idx >= 0) {
-      items[idx] = data;
-    } else {
-      // 新数据：分配新 ID
-      if (!data.id || items.some(it => it.id === data.id)) {
-        const maxId = items.reduce((m, it) => Math.max(m, it.id || 0), 0);
-        data.id = maxId + 1;
-      }
-      items.push(data);
-    }
-    this._cache[storeName] = items;
-    await this._save();
-    return data;
+  async getById(table, id) {
+    const items = await this.getAll(table);
+    return items.find(item => item.id === id) || null;
   },
 
-  // 删除
-  async delete(storeName, id) {
-    await this.open();
-    if (storeName === 'settings') {
-      delete this._cache.settings[id];
-      await this._save();
-      return true;
-    }
-    let items = this._cache[storeName] || [];
-    items = items.filter(it => it.id !== id);
-    this._cache[storeName] = items;
-    await this._save();
-    return true;
+  async add(table, item) {
+    const data = await this.open();
+    if (!data[table]) data[table] = [];
+    item.id = item.id || this._genId();
+    item.createdAt = new Date().toISOString();
+    item.updatedAt = item.createdAt;
+    data[table].push(item);
+    this._cache = data;
+    this._saveAsync();
+    return item;
   },
 
-  // 清空 store
-  async deleteAll(storeName) {
-    await this.open();
-    this._cache[storeName] = [];
-    await this._save();
-    return true;
+  async update(table, id, updates) {
+    const data = await this.open();
+    const idx = (data[table] || []).findIndex(item => item.id === id);
+    if (idx === -1) throw new Error('记录不存在');
+    updates.updatedAt = new Date().toISOString();
+    Object.assign(data[table][idx], updates);
+    this._cache = data;
+    this._saveAsync();
+    return data[table][idx];
   },
 
-  /* ========== 索引查询（兼容旧接口） ========== */
-  async getByIndex(storeName, indexName, value) {
-    const items = await this.getAll(storeName);
-    if (indexName === 'member_id') {
-      return items.filter(it => it.member_id === value);
-    }
-    if (indexName === 'generation') {
-      return items.filter(it => it.generation === value);
-    }
-    return items;
+  async delete(table, id) {
+    const data = await this.open();
+    data[table] = (data[table] || []).filter(item => item.id !== id);
+    this._cache = data;
+    this._saveAsync();
   },
 
-  async getMembersByGeneration(gen) {
-    return this.getByIndex('members', 'generation', gen);
+  /* 条件查询 */
+  async find(table, where) {
+    const items = await this.getAll(table);
+    return items.filter(item => {
+      return Object.entries(where).every(([k, v]) => item[k] === v);
+    });
   },
 
-  async getLifeEvents(memberId) {
-    return this.getByIndex('lifeEvents', 'member_id', memberId);
-  },
-
-  async getPhotos(memberId) {
-    return this.getByIndex('photos', 'member_id', memberId);
-  },
-
-  async getMessages(memberId) {
-    return this.getByIndex('messages', 'member_id', memberId);
-  },
-
-  /* ========== 设置项 ========== */
-  async getSetting(key, defaultValue) {
-    await this.open();
-    const val = (this._cache.settings || {})[key];
-    return val !== undefined ? val : defaultValue;
-  },
-
-  async setSetting(key, value) {
-    await this.open();
-    if (!this._cache.settings) this._cache.settings = {};
-    this._cache.settings[key] = value;
-    await this._save();
-  },
-
-  _settingsToArray(settingsObj) {
-    return Object.entries(settingsObj || {}).map(([key, value]) => ({ key, value }));
-  },
-
-  /* ========== 家族树数据构建（前端计算，同之前逻辑） ========== */
+  /* 获取家族树数据（直接返回树形结构） */
   async getTreeData() {
     const members = await this.getAll('members');
-    if (members.length === 0) return { roots: [] };
+    if (!members.length) return { roots: [] };
 
+    // 构建成员映射 + 孩子关系
     const map = {};
-    members.forEach(m => { map[m.id] = { ...m, children: [], spouses: [] }; });
+    members.forEach(m => {
+      map[m.id] = { ...m, children: [], spouses: [] };
+    });
 
+    // 建立父子关系（去重，优先挂父亲）
     const hasParent = new Set();
     const assignedChildren = new Set();
     members.forEach(m => {
@@ -209,23 +134,7 @@ const DB = {
       }
     });
 
-    let roots = members.filter(m => !hasParent.has(m.id)).map(m => map[m.id]);
-
-    if (roots.length > 1) {
-      roots.sort((a, b) => {
-        const ya = a.birth_date ? parseInt(a.birth_date.split('-')[0]) : 9999;
-        const yb = b.birth_date ? parseInt(b.birth_date.split('-')[0]) : 9999;
-        return ya - yb;
-      });
-      roots = [roots[0]];
-    }
-
-    Object.values(map).forEach(node => {
-      if (node.children.length > 0) {
-        node.children.sort((a, b) => (parseInt(a.birth_order) || 99) - (parseInt(b.birth_order) || 99));
-      }
-    });
-
+    // 支持多配偶
     members.forEach(m => {
       const spouseIds = [];
       if (m.spouse_ids && Array.isArray(m.spouse_ids)) spouseIds.push(...m.spouse_ids);
@@ -238,55 +147,56 @@ const DB = {
       });
     });
 
-    const extraRoots = [];
-    roots.forEach((root, rootIdx) => {
-      if (root.spouses && root.spouses.length > 0) {
-        root.spouses.forEach(s => {
-          const idx = roots.findIndex(r => r.id === s.id);
-          if (idx >= 0 && idx !== rootIdx) extraRoots.push(idx);
-        });
-      }
-    });
-    [...new Set(extraRoots)].sort((a, b) => b - a).forEach(idx => { roots.splice(idx, 1); });
+    // 只保留一支根树（取出生最早的）
+    let roots = members.filter(m => !hasParent.has(m.id)).map(m => map[m.id]);
+    if (roots.length > 1) {
+      roots.sort((a, b) => {
+        const ya = a.birth_date ? parseInt(a.birth_date.split('-')[0]) : 9999;
+        const yb = b.birth_date ? parseInt(b.birth_date.split('-')[0]) : 9999;
+        return ya - yb;
+      });
+      roots = [roots[0]];
+    }
 
     return { roots };
   },
 
-  /* ========== 统计数据 ========== */
-  async getStats() {
-    const members = await this.getAll('members');
-    const total = members.length;
-    const male = members.filter(m => m.gender === 'male').length;
-    const female = members.filter(m => m.gender === 'female').length;
-    const alive = members.filter(m => !m.death_date).length;
-    const deceased = members.filter(m => !!m.death_date).length;
-    const generations = [...new Set(members.map(m => m.generation || 1))].sort((a, b) => a - b);
-    return { total, male, female, alive, deceased, generations, generationCount: generations.length };
+  /* ========== 纪念堂状态 ========== */
+  async getMemorialState() {
+    const data = await this.open();
+    return data.settings && data.settings.memorial_state
+      ? JSON.parse(data.settings.memorial_state)
+      : { candles: 0, incense: 0, wine: 0, offerings: 0, lastDate: '' };
   },
 
-  /* ========== 日志 ========== */
-  async log(action, details) {
-    await this.open();
-    let logs = this._cache.logs || [];
-    const entry = { id: Date.now(), action, details, created_at: new Date().toISOString() };
-    logs.push(entry);
-    if (logs.length > 500) logs = logs.slice(-500);
-    this._cache.logs = logs;
-    // 日志不阻塞保存
-    this._save().catch(e => {});
+  async saveMemorialState(state) {
+    const data = await this.open();
+    if (!data.settings) data.settings = {};
+    data.settings.memorial_state = JSON.stringify(state);
+    this._cache = data;
+    this._saveAsync();
   },
 
-  /* ========== 导出 / 导入 ========== */
+  /* ========== 工具方法 ========== */
+  _genId() {
+    return '_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+  },
+
+  /* 导出全部数据（用于备份） */
   async exportAll() {
-    await this.open();
-    return { ...this._cache };
+    return await this.open();
   },
 
+  /* 导入全部数据（覆盖） */
   async importAll(data) {
-    await this.open();
-    this._cache = { ...this._emptyData(), ...data };
+    this._cache = {
+      members: data.members || [],
+      messages: data.messages || [],
+      mottos: data.mottos || [],
+      notices: data.notices || [],
+      settings: data.settings || {},
+    };
+    this._loaded = true;
     await this._save();
-  }
+  },
 };
-
-window.DB = DB;
