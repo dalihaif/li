@@ -485,7 +485,7 @@
     {
       "id": 21,
       "name": "刘妡",
-      "gender": "",
+      "gender": "male",
       "generation": 9,
       "ethnicity": "白族",
       "education": "",
@@ -505,7 +505,7 @@
       "generation_poem": "",
       "burial_site": "",
       "avatar": null,
-      "updatedAt": "2026-06-20T22:20:39.814Z"
+      "updatedAt": "2026-06-20T22:21:09.394Z"
     }
   ],
   "mottos": [
