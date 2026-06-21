@@ -61,7 +61,7 @@ const GitHubAPI = {
       throw new Error(`GitHub API 错误 ${res.status}: ${await res.text()}`);
     }
     const data = await res.json();
-    const content = decodeURIComponent(escape(atob(data.content.replace(/\n/g, ''))));
+    const content = this._base64ToUtf8(data.content.replace(/\n/g, ''));
     return { content, sha: data.sha };
   },
 
