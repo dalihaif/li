@@ -947,6 +947,36 @@
       "id": "_mqn2nopzi8lgp",
       "createdAt": "2026-06-21T00:52:17.255Z",
       "updatedAt": "2026-06-21T00:52:17.255Z"
+    },
+    {
+      "key": "memorial_state",
+      "value": {
+        "candleLit": 1,
+        "incenseLit": 1,
+        "wineLit": 0,
+        "offeringLit": 0,
+        "totalCandles": 1,
+        "totalIncense": 1,
+        "totalWine": 1,
+        "totalOfferings": 0
+      },
+      "id": "_mqn2nqfdgvx2m",
+      "createdAt": "2026-06-21T00:52:19.465Z",
+      "updatedAt": "2026-06-21T00:52:19.465Z"
+    },
+    {
+      "key": "memorial_visitor_logs",
+      "value": [
+        {
+          "visitorId": "v_1781992774898_sbd8eu",
+          "action": "wine",
+          "timestamp": "2026-06-21T00:52:19.466Z",
+          "date": "2026/6/21"
+        }
+      ],
+      "id": "_mqn2nqfed0hlh",
+      "createdAt": "2026-06-21T00:52:19.466Z",
+      "updatedAt": "2026-06-21T00:52:19.466Z"
     }
   ]
 }
