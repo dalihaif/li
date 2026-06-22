@@ -75,7 +75,14 @@ const Memorial = {
   async loadDeceased() {
     try {
       const allMembers = await DB.getAll('members');
-      const deceased = allMembers.filter(m => m.death_date || (m.status && m.status === 'deceased') || (m.is_alive === false));
+      const deceased = allMembers
+        .filter(m => m.death_date || (m.status && m.status === 'deceased') || (m.is_alive === false))
+        .sort((a, b) => {
+          // 按世代排序：有世代值的按数字排，没有的排最后
+          const ag = parseInt(a.generation) || 9999;
+          const bg = parseInt(b.generation) || 9999;
+          return ag - bg;
+        });
       const tabletsGrid = document.getElementById('tabletsGrid');
       if (!tabletsGrid) return;
 
