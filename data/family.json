@@ -274,7 +274,7 @@
     {
       "id": 10,
       "name": "李家旺",
-      "gender": "",
+      "gender": "male",
       "generation": 6,
       "ethnicity": "白族",
       "education": "",
@@ -294,7 +294,7 @@
       "generation_poem": "",
       "burial_site": "",
       "avatar": null,
-      "updatedAt": "2026-06-20T22:20:21.784Z"
+      "updatedAt": "2026-06-22T08:22:34.471Z"
     },
     {
       "id": 9,
