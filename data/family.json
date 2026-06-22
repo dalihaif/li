@@ -249,7 +249,7 @@
     {
       "id": 11,
       "name": "段家良",
-      "gender": "",
+      "gender": "female",
       "generation": 6,
       "ethnicity": "白族",
       "education": "",
@@ -269,7 +269,7 @@
       "generation_poem": "",
       "burial_site": "",
       "avatar": null,
-      "updatedAt": "2026-06-20T22:20:31.907Z"
+      "updatedAt": "2026-06-22T08:22:25.250Z"
     },
     {
       "id": 10,
