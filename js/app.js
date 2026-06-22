@@ -814,7 +814,7 @@ const App = {
     const content = document.getElementById('mottoContent')?.value?.trim();
     if (!title && !content) { this.showToast('请输入内容', 'warn'); return; }
     const data = { title, content, updated_at: new Date().toISOString() };
-    const promise = id ? DB.put('mottos', { ...data, id: parseInt(id) }) : DB.put('mottos', { ...data, sort_order: Date.now() });
+    const promise = id ? DB.put('mottos', { ...data, id: id }) : DB.put('mottos', { ...data, sort_order: Date.now() });
     promise.then(() => {
       this.showToast(id ? '家训已更新' : '家训已添加');
       document.getElementById('mottoModalOverlay').style.display = 'none';
@@ -895,7 +895,7 @@ const App = {
     const content = document.getElementById('noticeContent')?.value?.trim();
     if (!title && !content) { this.showToast('请输入内容', 'warn'); return; }
     const data = { title, content, updated_at: new Date().toISOString() };
-    const promise = id ? DB.put('notices', { ...data, id: parseInt(id) }) : DB.put('notices', { ...data, created_at: new Date().toISOString() });
+    const promise = id ? DB.put('notices', { ...data, id: id }) : DB.put('notices', { ...data, created_at: new Date().toISOString() });
     promise.then(() => {
       this.showToast(id ? '公告已更新' : '公告已发布');
       document.getElementById('noticeModalOverlay').style.display = 'none';
@@ -989,7 +989,7 @@ const App = {
   const formMotto = document.getElementById('formMotto');
   if (formMotto) formMotto.addEventListener('submit', (e) => App.saveMotto(e));
   const btnDelMotto = document.getElementById('btnDeleteMotto');
-  if (btnDelMotto) btnDelMotto.addEventListener('click', () => { const id = parseInt(document.getElementById('mottoEditId')?.value); if (id) App.deleteMotto(id); });
+  if (btnDelMotto) btnDelMotto.addEventListener('click', () => { const id = document.getElementById('mottoEditId')?.value; if (id) App.deleteMotto(id); });
 
   // 公告
   const btnAddNotice = document.getElementById('btnAddNotice');
@@ -997,7 +997,7 @@ const App = {
   const formNotice = document.getElementById('formNotice');
   if (formNotice) formNotice.addEventListener('submit', (e) => App.saveNotice(e));
   const btnDelNotice = document.getElementById('btnDeleteNotice');
-  if (btnDelNotice) btnDelNotice.addEventListener('click', () => { const id = parseInt(document.getElementById('noticeEditId')?.value); if (id) App.deleteNotice(id); });
+  if (btnDelNotice) btnDelNotice.addEventListener('click', () => { const id = document.getElementById('noticeEditId')?.value; if (id) App.deleteNotice(id); });
 
   // 首页
   if (currentPage === 'dashboard') {

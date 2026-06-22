@@ -63,7 +63,8 @@ const DB = {
 
   async getById(table, id) {
     const items = await this.getAll(table);
-    return items.find(item => item.id === id) || null;
+    // 宽松比较，兼容字符串/数字 id 混用
+    return items.find(item => item.id == id) || null;
   },
 
   async add(table, item) {
@@ -80,7 +81,8 @@ const DB = {
 
   async update(table, id, updates) {
     const data = await this.open();
-    const idx = (data[table] || []).findIndex(item => item.id === id);
+    // 宽松比较，兼容字符串/数字 id 混用
+    const idx = (data[table] || []).findIndex(item => item.id == id);
     if (idx === -1) throw new Error('记录不存在');
     updates.updatedAt = new Date().toISOString();
     Object.assign(data[table][idx], updates);
@@ -91,7 +93,8 @@ const DB = {
 
   async delete(table, id) {
     const data = await this.open();
-    data[table] = (data[table] || []).filter(item => item.id !== id);
+    // 宽松比较，兼容字符串/数字 id 混用
+    data[table] = (data[table] || []).filter(item => item.id != id);
     this._cache = data;
     this._saveAsync();
   },
